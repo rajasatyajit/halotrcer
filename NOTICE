@@ -3,3 +3,9 @@ Halotrcer, Copyright 2026 Satyajit Rajaraman / Halotrcer
 This product is licensed under the Apache License, Version 2.0 (LICENSE).
 It installs and runs Tokvera and Sievant, which are separate products
 distributed under their own licenses; no code from either is included.
+
+internal/pdf/metrics.go holds glyph widths derived from Adobe's Core 14 AFM
+files (Helvetica, Helvetica-Bold). Copyright (c) 1985, 1987, 1989, 1990, 1997
+Adobe Systems Incorporated. All Rights Reserved. Helvetica is a trademark of
+Linotype-Hell AG and/or its subsidiaries. Their terms are in
+internal/pdf/AFM-LICENSE.txt.

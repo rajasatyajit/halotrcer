@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<meta name="referrer" content="no-referrer">
+<title>Halotrcer report: http://127.0.0.1:18089/v1</title>
+<style>
+:root{--bg:#fbfbf9;--fg:#1d2126;--muted:#5d6670;--line:#dfe2e5;--card:#fff;--accent:#1f5f8b;--crit:#a3262a;--high:#c2561a;--med:#9a6f00;--low:#4b6b8a;--ok:#2c7a4b;--tag:#eef1f4}
+@media (prefers-color-scheme:dark){:root{--bg:#14171a;--fg:#e4e7ea;--muted:#9aa3ad;--line:#2c3238;--card:#1b1f23;--accent:#6fb0de;--crit:#ef6b6f;--high:#f0955c;--med:#e3be4f;--low:#8fb0cf;--ok:#6cc391;--tag:#262c32}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:20px;margin:36px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}h3{font-size:16px;margin:20px 0 8px}
+.muted{color:var(--muted)}.small{font-size:13px}
+.banner{border:1px solid var(--line);border-left:4px solid var(--high);background:var(--card);padding:10px 14px;margin:12px 0;border-radius:6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0 18px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.tile .k{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}.tile .v{font-size:24px;font-weight:650;margin-top:2px}.tile .n{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:10px;background:var(--tag);color:var(--muted);margin-left:4px;white-space:nowrap}
+.tag.deal{color:var(--crit);font-weight:600}
+.sev{font-weight:600;text-transform:capitalize}.sev-critical{color:var(--crit)}.sev-high{color:var(--high)}.sev-medium{color:var(--med)}.sev-low,.sev-info{color:var(--low)}.st-fail{color:var(--crit);font-weight:600}.st-warn{color:var(--med);font-weight:600}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--card)}th,td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--line)}th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+ol.top{padding-left:22px;margin:0}ol.top li{margin:0 0 12px}
+.find{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:0 0 10px}.find p{margin:4px 0}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--tag);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
+.week{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:0 0 12px}.week ul{margin:6px 0 0;padding-left:20px}.week li{margin:0 0 6px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line)}
+.cta{display:block;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:14px 16px;margin:16px 0}.cta a{color:var(--accent);font-weight:650}
+a{color:var(--accent)}
+@media print{body{background:#fff;color:#000}main{max-width:none;padding:0}.tile,.find,.week,.cta,table{break-inside:avoid}a{color:#000}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Halotrcer report</h1>
+<div class="muted">Target <code>http://127.0.0.1:18089/v1</code> · 2026-10-20 12:00 UTC · halotrcer test</div>
+<div class="muted small">Tokvera v0.1.0-dev (ok) · Sievant v0.1.0-157-gd8a8bcf (ok)</div>
+<div class="banner small">tokvera v0.1.0-dev is outside the versions this release supports (&gt;=0.2.0 &lt;0.3.0)</div>
+
+</header>
+
+<section id="summary">
+<h2>Executive summary</h2>
+<div class="tiles">
+<div class="tile"><div class="k">Efficiency grade (Tokvera)</div><div class="v">A</div><div class="n">Provisional scoring</div></div>
+<div class="tile"><div class="k">Cost per 1,000 requests</div><div class="v">$0.0475</div><div class="n">measured, estimate at 2026-10-20 rates</div></div>
+<div class="tile"><div class="k">At your volume</div><div class="v">$95.00/mo</div><div class="n">2,000,000 requests/month you gave × measured cost</div></div>
+<div class="tile"><div class="k">Agent security (Sievant)</div><div class="v">4 critical · 8 high</div><div class="n">5 MCP configuration file(s) read</div></div>
+<div class="tile"><div class="k">Deal risk</div><div class="v">12</div><div class="n">findings a customer security review would flag</div></div>
+</div>
+
+<h3>Top 5 findings, ranked by business impact</h3>
+<ol class="top">
+<li><strong>Hard-coded database URL with password</strong><span class="tag deal">deal risk</span><span class="tag">Sievant SEC001</span><span class="tag">security</span><br>
+<span class="small muted">critical security finding (Sievant SEC001) · server <code>db</code> · <code>args[2]</code></span><br><span class="small">Fix: Move it to the environment or a secret store and reference it (for example ${SERVER_TOKEN}); then rotate it, since it has been on disk.</span></li>
+<li><strong>Hard-coded GitHub token</strong><span class="tag deal">deal risk</span><span class="tag">Sievant SEC001</span><span class="tag">security</span><br>
+<span class="small muted">critical security finding (Sievant SEC001) · server <code>github</code> · <code>env.GITHUB_PERSONAL_ACCESS_TOKEN</code></span><br><span class="small">Fix: Move it to the environment or a secret store and reference it (for example ${GITHUB_PERSONAL_ACCESS_TOKEN}); then rotate it, since it has been on disk.</span></li>
+<li><strong>Hard-coded Slack token</strong><span class="tag deal">deal risk</span><span class="tag">Sievant SEC001</span><span class="tag">security</span><br>
+<span class="small muted">critical security finding (Sievant SEC001) · server <code>slack</code> · <code>env.SLACK_BOT_TOKEN</code></span><br><span class="small">Fix: Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.</span></li>
+<li><strong>Hard-coded Anthropic API key</strong><span class="tag deal">deal risk</span><span class="tag">Sievant SEC001</span><span class="tag">security</span><br>
+<span class="small muted">critical security finding (Sievant SEC001) · server <code>remote</code> · <code>headers.Authorization</code></span><br><span class="small">Fix: Reference it from the environment and rotate it.</span></li>
+<li><strong>Remote server over plain HTTP</strong><span class="tag deal">deal risk</span><span class="tag">Sievant NET001</span><span class="tag">security</span><br>
+<span class="small muted">deal risk: a customer security review would flag Sievant NET001 (high) · server <code>plain</code> · <code>url</code></span><br><span class="small">Fix: Use {masked-url}.</span></li>
+</ol>
+</section>
+
+<section id="cost-performance">
+<h2>Cost &amp; performance</h2>
+<p class="small muted">From Tokvera: <code>http://127.0.0.1:18089/v1</code>, model <code>tokvera-sim-batched</code>.</p>
+
+<p><strong>Efficiency grade: A</strong> (97.2 / 100, scoring 0.9.0)</p>
+<p class="small"><strong>Provisional scoring.</strong> The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0.</p>
+
+<p class="small">Requests: 24 sent, 24 succeeded, 0 failed, in 1.4 s.</p>
+<div class="scroll"><table>
+<tr><th class="num">Concurrency</th><th class="num">Requests</th><th class="num">Failed</th><th class="num">TTFT p50</th><th class="num">TTFT p95</th><th class="num">TTFT p99</th><th class="num">Duration p95</th><th class="num">Tokens/s p50</th></tr>
+<tr><td class="num">1</td><td class="num">8</td><td class="num">0</td><td class="num">35.8 ms</td><td class="num">36.7 ms</td><td class="num">36.7 ms</td><td class="num">98.2 ms</td><td class="num">262.3</td></tr><tr><td class="num">2</td><td class="num">8</td><td class="num">0</td><td class="num">36.1 ms</td><td class="num">36.9 ms</td><td class="num">36.9 ms</td><td class="num">98.2 ms</td><td class="num">261.3</td></tr><tr><td class="num">4</td><td class="num">8</td><td class="num">0</td><td class="num">36.3 ms</td><td class="num">36.4 ms</td><td class="num">36.4 ms</td><td class="num">98.5 ms</td><td class="num">258.5</td></tr>
+</table></div>
+<h3>Cost</h3>
+<p><strong>$0.0475</strong> per 1,000 requests (estimate), from the rate sheet <code>fixture-pricing.yaml</code> as of 2026-10-20, source: halotrcer fixture (synthetic rate, not a real price). the mean priced request times 1,000, at the rate sheet&#39;s input and output rates; input tokens are estimated from the prompt length where the provider did not state them, and the completion is the provider-reported count</p>
+
+
+<p>At the <strong>2,000,000</strong> requests a month you gave: <strong>$95.00 a month</strong> (measured cost × your volume; rates as of 2026-10-20). This is spend, not a saving: no tool here measures what a fix would save.</p>
+<h3>Findings</h3>
+<div class="find"><strong>No Prometheus metrics at /metrics</strong> <span class="st-warn">warn</span><span class="tag">metrics_endpoint</span><span class="tag">−5 grade points</span><span class="tag">effort 0.5 days</span>
+<p class="small">no Prometheus exposition answered at /metrics on the target&#39;s origin</p><p class="small muted">Queue depth, batch size and cache usage are what explain a latency problem. Without them, a slowdown can be seen but not diagnosed.</p><p class="small"><strong>Fix:</strong> Enable the server&#39;s metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there.</p></div>
+
+<p class="small muted">Tokvera contacts only the target you specify, plus GitHub when you run update or doctor --check-update, and tokvera.halotrcer.com and GitHub for the plugin&#39;s first-run install.</p><p class="small muted">The load used Tokvera&#39;s fixed, harmless benchmark prompts. Response text was read for timing and discarded; none is stored in this report.</p>
+</section>
+
+<section id="agent-security">
+<h2>Agent security</h2>
+<p class="small muted">From Sievant: the MCP server configuration of the AI clients on this machine, read without starting any server.</p>
+<div class="scroll"><table>
+<tr><th>Client</th><th>File</th><th>Scope</th><th class="num">Servers</th><th class="num">Not behind Sievant</th></tr>
+<tr><td>claude-desktop</td><td><code>testdata/scan/claude_desktop_config.json</code></td><td>file</td><td class="num">11</td><td class="num">10</td></tr><tr><td>custom</td><td><code>testdata/scan/claude.json</code></td><td>file</td><td class="num">3</td><td class="num">3</td></tr><tr><td>custom</td><td><code>testdata/scan/cursor-mcp.json</code></td><td>file</td><td class="num">4</td><td class="num">4</td></tr><tr><td>custom</td><td><code>testdata/scan/vscode-mcp.jsonc</code></td><td>file</td><td class="num">2</td><td class="num">2</td></tr><tr><td>custom</td><td><code>testdata/scan/windsurf-mcp_config.json</code></td><td>file</td><td class="num">1</td><td class="num">1</td></tr>
+</table></div>
+<p class="small">Findings: 4 critical, 8 high, 7 medium, 0 low, 1 info.</p>
+<div class="find"><span class="sev sev-critical">critical</span> <strong>Hard-coded database URL with password</strong><span class="tag">SEC001</span><span class="tag deal">deal risk</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>db</code> · <code>args[2]</code></p>
+<p class="small">Evidence (masked): <code>post… (29 chars)</code></p><p class="small muted">A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.</p><p class="small"><strong>Fix:</strong> Move it to the environment or a secret store and reference it (for example ${SERVER_TOKEN}); then rotate it, since it has been on disk.</p></div>
+<div class="find"><span class="sev sev-critical">critical</span> <strong>Hard-coded GitHub token</strong><span class="tag">SEC001</span><span class="tag deal">deal risk</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>github</code> · <code>env.GITHUB_PERSONAL_ACCESS_TOKEN</code></p>
+<p class="small">Evidence (masked): <code>ghp_… (40 chars)</code></p><p class="small muted">A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.</p><p class="small"><strong>Fix:</strong> Move it to the environment or a secret store and reference it (for example ${GITHUB_PERSONAL_ACCESS_TOKEN}); then rotate it, since it has been on disk.</p></div>
+<div class="find"><span class="sev sev-critical">critical</span> <strong>Hard-coded Slack token</strong><span class="tag">SEC001</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/cursor-mcp.json</code> · server <code>slack</code> · <code>env.SLACK_BOT_TOKEN</code></p>
+<p class="small">Evidence (masked): <code>xoxb… (28 chars)</code></p><p class="small muted">A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.</p><p class="small"><strong>Fix:</strong> Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.</p></div>
+<div class="find"><span class="sev sev-critical">critical</span> <strong>Hard-coded Anthropic API key</strong><span class="tag">SEC001</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/windsurf-mcp_config.json</code> · server <code>remote</code> · <code>headers.Authorization</code></p>
+<p class="small">Evidence (masked): <code>sk-a… (53 chars)</code></p><p class="small muted">The Authorization header holds a literal credential.</p><p class="small"><strong>Fix:</strong> Reference it from the environment and rotate it.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Remote server over plain HTTP</strong><span class="tag">NET001</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/claude.json</code> · server <code>plain</code> · <code>url</code></p>
+<p class="small">Evidence (masked): <code>http://mcp.internal.example:8080</code></p><p class="small muted">Requests, results and any credential travel unencrypted and can be read or changed on the network.</p><p class="small"><strong>Fix:</strong> Use {masked-url}.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Access to the whole filesystem</strong><span class="tag">PERM001</span><span class="tag deal">deal risk</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>files</code> · <code>args[2]</code></p>
+<p class="small">Evidence (masked): <code>/</code></p><p class="small muted">The server is given the filesystem root: every file the user can read (keys, browser profiles, other projects) is in reach of the agent and of anything that injects instructions into it.</p><p class="small"><strong>Fix:</strong> Give the server only the directories it needs, for example the project directory.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Literal value in secret-named field X-API-Key</strong><span class="tag">SEC002</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/vscode-mcp.jsonc</code> · server <code>api</code> · <code>headers.X-API-Key</code></p>
+<p class="small">Evidence (masked): <code>lite… (21 chars)</code></p><p class="small muted">The field&#39;s name says it holds a credential, and its value is written in the file rather than referenced.</p><p class="small"><strong>Fix:</strong> Reference it from the environment (for example ${X_API_KEY}) and rotate it.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Credential embedded in the server URL</strong><span class="tag">SEC004</span><span class="tag deal">deal risk</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>remote-bridge</code> · <code>args[2]</code></p>
+<p class="small">Evidence (masked): <code>https://mcp.capability.example/tenant/server/{masked:36}/mcp?user_id={masked:8}</code></p><p class="small muted">The URL itself grants access (path segment 3 (uuid), query user_id (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.</p><p class="small"><strong>Fix:</strong> Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Credential embedded in the server URL</strong><span class="tag">SEC004</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/cursor-mcp.json</code> · server <code>cap-remote</code> · <code>url</code></p>
+<p class="small">Evidence (masked): <code>https://mcp.capability.example/apps/{masked:22}/mcp</code></p><p class="small muted">The URL itself grants access (path segment 2 (high-entropy)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.</p><p class="small"><strong>Fix:</strong> Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Credential embedded in the server URL</strong><span class="tag">SEC004</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/cursor-mcp.json</code> · server <code>notes</code> · <code>url</code></p>
+<p class="small">Evidence (masked): <code>https://mcp.example.com/sse{masked:16}</code></p><p class="small muted">The URL itself grants access (query api_key (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.</p><p class="small"><strong>Fix:</strong> Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Server fetched from a repository or URL at start</strong><span class="tag">SUP002</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>git-source</code> · <code>args</code></p>
+<p class="small">Evidence (masked): <code>github:example/mcp-server</code></p><p class="small muted">The code that runs is whatever the repository or URL holds at launch time, outside any registry&#39;s checks and without a pinned release.</p><p class="small"><strong>Fix:</strong> Use a published release pinned to an exact version (or a commit hash).</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Server launched by a script downloaded at start</strong><span class="tag">SUP002</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>installer</code> · <code>args</code></p>
+<p class="small">Evidence (masked): <code>-c curl -fsSL https://example.com/install.sh | sh</code></p><p class="small muted">Whatever the URL serves at launch time runs with the user&#39;s rights; it can change at any time without notice.</p><p class="small"><strong>Fix:</strong> Install a pinned release and run it directly.</p></div>
+<div class="find"><span class="sev sev-medium">medium</span> <strong>Remote server with no credential configured</strong><span class="tag">AUTH001</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/claude.json</code> · server <code>remote-noauth</code> · <code>url</code></p>
+<p class="small">Evidence (masked): <code>https://mcp.example.com</code></p><p class="small muted">No Authorization or API-key header is configured. The client may still sign in with OAuth when it connects; if it does not, anyone who can reach the URL can use the server&#39;s tools.</p><p class="small"><strong>Fix:</strong> Confirm the server requires authentication (OAuth or a header referenced from the environment).</p></div>
+<div class="find"><span class="sev sev-medium">medium</span> <strong>Access to the whole home directory</strong><span class="tag">PERM002</span><span class="tag deal">deal risk</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>home</code> · <code>args[2]</code></p>
+<p class="small">Evidence (masked): <code>~</code></p><p class="small muted">The home directory holds SSH keys, cloud credentials, shell history and browser data.</p><p class="small"><strong>Fix:</strong> Give the server only the directories it needs.</p></div>
+<div class="find"><span class="sev sev-medium">medium</span> <strong>Server runs with the host network (container)</strong><span class="tag">PERM003</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>docker</code> · <code>args[3]</code></p>
+<p class="small">Evidence (masked): <code>--network</code></p><p class="small muted">The server can reach far more than its tools need, which widens what a compromised or manipulated server can do.</p><p class="small"><strong>Fix:</strong> Grant only the access the server needs (for Deno, --allow-net=&lt;hosts&gt;; for containers, a dedicated network).</p></div>
+<div class="find"><span class="sev sev-medium">medium</span> <strong>Server runs with all permissions (Deno)</strong><span class="tag">PERM003</span>
+<p class="small muted">custom · <code>testdata/scan/cursor-mcp.json</code> · server <code>deno</code> · <code>args[1]</code></p>
+<p class="small">Evidence (masked): <code>--allow-all</code></p><p class="small muted">The server can reach far more than its tools need, which widens what a compromised or manipulated server can do.</p><p class="small"><strong>Fix:</strong> Grant only the access the server needs (for Deno, --allow-net=&lt;hosts&gt;; for containers, a dedicated network).</p></div>
+<div class="find"><span class="sev sev-medium">medium</span> <strong>Unpinned server version</strong><span class="tag">SUP001</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>docker</code> · <code>args</code></p>
+<p class="small">Evidence (masked): <code>example/mcp-server</code></p><p class="small muted">Each launch may run a different release, including a compromised one, without any change to this file.</p><p class="small"><strong>Fix:</strong> Pin the image by digest (image@sha256:…) or at least an exact version tag.</p></div>
+<div class="find"><span class="sev sev-medium">medium</span> <strong>Unpinned server version</strong><span class="tag">SUP001</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>github</code> · <code>args</code></p>
+<p class="small">Evidence (masked): <code>@example/github-mcp</code></p><p class="small muted">Each launch may run a different release, including a compromised one, without any change to this file.</p><p class="small"><strong>Fix:</strong> Pin an exact version, for example example/github-mcp@1.2.3 (with its scope), and update it deliberately.</p></div>
+<div class="find"><span class="sev sev-medium">medium</span> <strong>Server pinned to a moving tag (latest)</strong><span class="tag">SUP001</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>latest</code> · <code>args</code></p>
+<p class="small">Evidence (masked): <code>example-mcp@latest</code></p><p class="small muted">Each launch may run a different release, including a compromised one, without any change to this file.</p><p class="small"><strong>Fix:</strong> Pin an exact version (name==1.2.3) and update it deliberately.</p></div>
+<div class="find"><span class="sev sev-info">info</span> <strong>Launched through Sievant</strong><span class="tag">SVT001</span>
+<p class="small muted">claude-desktop · <code>testdata/scan/claude_desktop_config.json</code> · server <code>wrapped</code></p>
+<p class="small muted">This server already runs behind `sievant proxy`: its calls pass Sievant&#39;s guardrails.</p></div>
+
+<p class="small muted">Tool descriptions, and the resources and prompts each server offers, were not checked: that needs starting the servers (sievant scan --inspect-tools, which runs them).</p>
+
+</section>
+
+<section id="fix-plan">
+<h2>30-day fix plan</h2>
+<p class="small muted">Ordered by the ranking above. Each fix is the tool's own advice.</p>
+<div class="week"><strong>Week 1: critical exposure and quick fixes</strong>
+<ul><li>Hard-coded database URL with password <span class="tag">Sievant SEC001</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · db · args[2]</span><br><span class="small">Move it to the environment or a secret store and reference it (for example ${SERVER_TOKEN}); then rotate it, since it has been on disk.</span></li><li>Hard-coded GitHub token <span class="tag">Sievant SEC001</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · github · env.GITHUB_PERSONAL_ACCESS_TOKEN</span><br><span class="small">Move it to the environment or a secret store and reference it (for example ${GITHUB_PERSONAL_ACCESS_TOKEN}); then rotate it, since it has been on disk.</span></li><li>Hard-coded Slack token <span class="tag">Sievant SEC001</span><br><span class="small muted">testdata/scan/cursor-mcp.json · slack · env.SLACK_BOT_TOKEN</span><br><span class="small">Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.</span></li><li>Hard-coded Anthropic API key <span class="tag">Sievant SEC001</span><br><span class="small muted">testdata/scan/windsurf-mcp_config.json · remote · headers.Authorization</span><br><span class="small">Reference it from the environment and rotate it.</span></li><li>Remote server over plain HTTP <span class="tag">Sievant NET001</span><br><span class="small muted">testdata/scan/claude.json · plain · url</span><br><span class="small">Use {masked-url}.</span></li><li>Access to the whole filesystem <span class="tag">Sievant PERM001</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · files · args[2]</span><br><span class="small">Give the server only the directories it needs, for example the project directory.</span></li><li>Literal value in secret-named field X-API-Key <span class="tag">Sievant SEC002</span><br><span class="small muted">testdata/scan/vscode-mcp.jsonc · api · headers.X-API-Key</span><br><span class="small">Reference it from the environment (for example ${X_API_KEY}) and rotate it.</span></li><li>Credential embedded in the server URL <span class="tag">Sievant SEC004</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · remote-bridge · args[2]</span><br><span class="small">Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</span></li><li>Credential embedded in the server URL <span class="tag">Sievant SEC004</span><br><span class="small muted">testdata/scan/cursor-mcp.json · cap-remote · url</span><br><span class="small">Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</span></li><li>Credential embedded in the server URL <span class="tag">Sievant SEC004</span><br><span class="small muted">testdata/scan/cursor-mcp.json · notes · url</span><br><span class="small">Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</span></li><li>No Prometheus metrics at /metrics <span class="tag">Tokvera metrics_endpoint</span><span class="tag">0.5 days</span><br><span class="small">Enable the server&#39;s metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there.</span></li></ul></div>
+<div class="week"><strong>Week 2: the largest cost and latency failures</strong>
+<p class="small muted">Nothing this week.</p></div>
+<div class="week"><strong>Week 3: remaining high-severity security findings</strong>
+<ul><li>Server fetched from a repository or URL at start <span class="tag">Sievant SUP002</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · git-source · args</span><br><span class="small">Use a published release pinned to an exact version (or a commit hash).</span></li><li>Server launched by a script downloaded at start <span class="tag">Sievant SUP002</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · installer · args</span><br><span class="small">Install a pinned release and run it directly.</span></li></ul></div>
+<div class="week"><strong>Week 4: everything else</strong>
+<ul><li>Remote server with no credential configured <span class="tag">Sievant AUTH001</span><br><span class="small muted">testdata/scan/claude.json · remote-noauth · url</span><br><span class="small">Confirm the server requires authentication (OAuth or a header referenced from the environment).</span></li><li>Access to the whole home directory <span class="tag">Sievant PERM002</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · home · args[2]</span><br><span class="small">Give the server only the directories it needs.</span></li><li>Server runs with the host network (container) <span class="tag">Sievant PERM003</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · docker · args[3]</span><br><span class="small">Grant only the access the server needs (for Deno, --allow-net=&lt;hosts&gt;; for containers, a dedicated network).</span></li><li>Server runs with all permissions (Deno) <span class="tag">Sievant PERM003</span><br><span class="small muted">testdata/scan/cursor-mcp.json · deno · args[1]</span><br><span class="small">Grant only the access the server needs (for Deno, --allow-net=&lt;hosts&gt;; for containers, a dedicated network).</span></li><li>Unpinned server version <span class="tag">Sievant SUP001</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · docker · args</span><br><span class="small">Pin the image by digest (image@sha256:…) or at least an exact version tag.</span></li><li>Unpinned server version <span class="tag">Sievant SUP001</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · github · args</span><br><span class="small">Pin an exact version, for example example/github-mcp@1.2.3 (with its scope), and update it deliberately.</span></li><li>Server pinned to a moving tag (latest) <span class="tag">Sievant SUP001</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · latest · args</span><br><span class="small">Pin an exact version (name==1.2.3) and update it deliberately.</span></li><li>Launched through Sievant <span class="tag">Sievant SVT001</span><br><span class="small muted">testdata/scan/claude_desktop_config.json · wrapped</span></li></ul></div>
+
+</section>
+
+<section id="method">
+<h2>How to read this report</h2>
+<p class="small">Halotrcer&#39;s ranking across the two tools is provisional (scoring version 0.1.0): its tiers are judgement, not calibrated. See docs/scoring.md.</p>
+<p class="small">Halotrcer contacts only the target you give it (through Tokvera) and reads only the MCP configuration files Sievant reads, on this machine. It sends no telemetry. Secrets stay masked as each tool masks them; on top of that, Halotrcer drops URL credentials and query strings, hides environment values, shows your home directory as ~ and replaces your user name with &lt;user&gt;.</p>
+</section>
+
+<footer>
+<div class="cta">Want a second pair of eyes? Book the <a href="https://www.halotrcer.com/book" rel="noreferrer">AI Cost &amp; Security Audit</a>.</div>
+<p class="small muted">Generated by halotrcer test · schema halotrcer.check-report/v1.0.0</p>
+</footer>
+</main>
+</body>
+</html>

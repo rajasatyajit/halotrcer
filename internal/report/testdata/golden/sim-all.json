@@ -1,0 +1,835 @@
+{
+  "schema_version": "halotrcer.check-report/v1.0.0",
+  "generator": "halotrcer test",
+  "generated_at": "2026-10-20T12:00:00Z",
+  "target": "http://127.0.0.1:18089/v1",
+  "tools": [
+    {
+      "name": "tokvera",
+      "version": "v0.1.0-dev",
+      "status": "ok",
+      "compat_warning": "tokvera v0.1.0-dev is outside the versions this release supports (>=0.2.0 <0.3.0)"
+    },
+    {
+      "name": "sievant",
+      "version": "v0.1.0-157-gd8a8bcf",
+      "status": "ok"
+    }
+  ],
+  "summary": {
+    "top": [
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded database URL with password",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "post… (29 chars)",
+        "fix": "Move it to the environment or a secret store and reference it (for example ${SERVER_TOKEN}); then rotate it, since it has been on disk.",
+        "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "db",
+        "where": "args[2]"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded GitHub token",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "ghp_… (40 chars)",
+        "fix": "Move it to the environment or a secret store and reference it (for example ${GITHUB_PERSONAL_ACCESS_TOKEN}); then rotate it, since it has been on disk.",
+        "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "github",
+        "where": "env.GITHUB_PERSONAL_ACCESS_TOKEN"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded Slack token",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "xoxb… (28 chars)",
+        "fix": "Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.",
+        "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "slack",
+        "where": "env.SLACK_BOT_TOKEN"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded Anthropic API key",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "sk-a… (53 chars)",
+        "fix": "Reference it from the environment and rotate it.",
+        "detail": "The Authorization header holds a literal credential.",
+        "client": "custom",
+        "file": "testdata/scan/windsurf-mcp_config.json",
+        "server": "remote",
+        "where": "headers.Authorization"
+      },
+      {
+        "source": "sievant",
+        "ref": "NET001",
+        "title": "Remote server over plain HTTP",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant NET001 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "http://mcp.internal.example:8080",
+        "fix": "Use {masked-url}.",
+        "detail": "Requests, results and any credential travel unencrypted and can be read or changed on the network.",
+        "client": "custom",
+        "file": "testdata/scan/claude.json",
+        "server": "plain",
+        "where": "url"
+      }
+    ],
+    "grade": "A",
+    "grade_provisional": true,
+    "usd_per_1k_requests": 0.0475,
+    "spend": {
+      "usd_per_1k_requests": 0.0475,
+      "monthly_requests": 2000000,
+      "monthly_usd": 95,
+      "pricing_as_of": "2026-10-20",
+      "pricing_source": "halotrcer fixture (synthetic rate, not a real price)",
+      "estimate": true
+    },
+    "security_counts": {
+      "critical": 4,
+      "high": 8,
+      "info": 1,
+      "low": 0,
+      "medium": 7
+    },
+    "deal_risk": 12
+  },
+  "cost_performance": {
+    "target": "http://127.0.0.1:18089/v1",
+    "model": "tokvera-sim-batched",
+    "simulated": false,
+    "simulated_timing": false,
+    "grade": "A",
+    "points": 97.2,
+    "scoring_version": "0.9.0",
+    "provisional": true,
+    "provisional_note": "The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0.",
+    "requests": 24,
+    "succeeded": 24,
+    "failed": 0,
+    "duration_ms": 1365,
+    "levels": [
+      {
+        "concurrency": 1,
+        "requests": 8,
+        "failed": 0,
+        "ttft_p50_ms": 35.84647,
+        "ttft_p95_ms": 36.748869,
+        "ttft_p99_ms": 36.748869,
+        "request_duration_p95_ms": 98.213759,
+        "output_tokens_per_s_p50": 262.25343096329226
+      },
+      {
+        "concurrency": 2,
+        "requests": 8,
+        "failed": 0,
+        "ttft_p50_ms": 36.088548,
+        "ttft_p95_ms": 36.927428,
+        "ttft_p99_ms": 36.927428,
+        "request_duration_p95_ms": 98.187349,
+        "output_tokens_per_s_p50": 261.30624772132785
+      },
+      {
+        "concurrency": 4,
+        "requests": 8,
+        "failed": 0,
+        "ttft_p50_ms": 36.329375,
+        "ttft_p95_ms": 36.441296,
+        "ttft_p99_ms": 36.441296,
+        "request_duration_p95_ms": 98.480183,
+        "output_tokens_per_s_p50": 258.47094918997465
+      }
+    ],
+    "cost": {
+      "usd_per_1k_requests": 0.0475,
+      "estimate": true,
+      "basis": "the mean priced request times 1,000, at the rate sheet's input and output rates; input tokens are estimated from the prompt length where the provider did not state them, and the completion is the provider-reported count",
+      "pricing_sheet": "fixture-pricing.yaml",
+      "pricing_as_of": "2026-10-20",
+      "pricing_source": "halotrcer fixture (synthetic rate, not a real price)"
+    },
+    "spend": {
+      "usd_per_1k_requests": 0.0475,
+      "monthly_requests": 2000000,
+      "monthly_usd": 95,
+      "pricing_as_of": "2026-10-20",
+      "pricing_source": "halotrcer fixture (synthetic rate, not a real price)",
+      "estimate": true
+    },
+    "findings": [
+      {
+        "source": "tokvera",
+        "ref": "metrics_endpoint",
+        "title": "No Prometheus metrics at /metrics",
+        "dimension": "operational",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": false,
+        "why": "Tokvera warning on operational, impact 5 grade points",
+        "week": 1,
+        "status": "warn",
+        "impact": 5,
+        "rank": 1,
+        "effort": "0.5 days",
+        "evidence": "no Prometheus exposition answered at /metrics on the target's origin",
+        "why_it_matters": "Queue depth, batch size and cache usage are what explain a latency problem. Without them, a slowdown can be seen but not diagnosed.",
+        "fix": "Enable the server's metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there."
+      }
+    ],
+    "privacy": [
+      "Tokvera contacts only the target you specify, plus GitHub when you run update or doctor --check-update, and tokvera.halotrcer.com and GitHub for the plugin's first-run install.",
+      "The load used Tokvera's fixed, harmless benchmark prompts. Response text was read for timing and discarded; none is stored in this report."
+    ]
+  },
+  "agent_security": {
+    "files": [
+      {
+        "client": "claude-desktop",
+        "path": "testdata/scan/claude_desktop_config.json",
+        "scope": "file",
+        "servers": 11,
+        "unwrapped": 10
+      },
+      {
+        "client": "custom",
+        "path": "testdata/scan/claude.json",
+        "scope": "file",
+        "servers": 3,
+        "unwrapped": 3
+      },
+      {
+        "client": "custom",
+        "path": "testdata/scan/cursor-mcp.json",
+        "scope": "file",
+        "servers": 4,
+        "unwrapped": 4
+      },
+      {
+        "client": "custom",
+        "path": "testdata/scan/vscode-mcp.jsonc",
+        "scope": "file",
+        "servers": 2,
+        "unwrapped": 2
+      },
+      {
+        "client": "custom",
+        "path": "testdata/scan/windsurf-mcp_config.json",
+        "scope": "file",
+        "servers": 1,
+        "unwrapped": 1
+      }
+    ],
+    "counts": {
+      "critical": 4,
+      "high": 8,
+      "info": 1,
+      "low": 0,
+      "medium": 7
+    },
+    "tools_inspected": false,
+    "findings": [
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded database URL with password",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "post… (29 chars)",
+        "fix": "Move it to the environment or a secret store and reference it (for example ${SERVER_TOKEN}); then rotate it, since it has been on disk.",
+        "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "db",
+        "where": "args[2]"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded GitHub token",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "ghp_… (40 chars)",
+        "fix": "Move it to the environment or a secret store and reference it (for example ${GITHUB_PERSONAL_ACCESS_TOKEN}); then rotate it, since it has been on disk.",
+        "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "github",
+        "where": "env.GITHUB_PERSONAL_ACCESS_TOKEN"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded Slack token",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "xoxb… (28 chars)",
+        "fix": "Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.",
+        "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "slack",
+        "where": "env.SLACK_BOT_TOKEN"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded Anthropic API key",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "sk-a… (53 chars)",
+        "fix": "Reference it from the environment and rotate it.",
+        "detail": "The Authorization header holds a literal credential.",
+        "client": "custom",
+        "file": "testdata/scan/windsurf-mcp_config.json",
+        "server": "remote",
+        "where": "headers.Authorization"
+      },
+      {
+        "source": "sievant",
+        "ref": "NET001",
+        "title": "Remote server over plain HTTP",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant NET001 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "http://mcp.internal.example:8080",
+        "fix": "Use {masked-url}.",
+        "detail": "Requests, results and any credential travel unencrypted and can be read or changed on the network.",
+        "client": "custom",
+        "file": "testdata/scan/claude.json",
+        "server": "plain",
+        "where": "url"
+      },
+      {
+        "source": "sievant",
+        "ref": "PERM001",
+        "title": "Access to the whole filesystem",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant PERM001 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "/",
+        "fix": "Give the server only the directories it needs, for example the project directory.",
+        "detail": "The server is given the filesystem root: every file the user can read (keys, browser profiles, other projects) is in reach of the agent and of anything that injects instructions into it.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "files",
+        "where": "args[2]"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC002",
+        "title": "Literal value in secret-named field X-API-Key",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC002 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "lite… (21 chars)",
+        "fix": "Reference it from the environment (for example ${X_API_KEY}) and rotate it.",
+        "detail": "The field's name says it holds a credential, and its value is written in the file rather than referenced.",
+        "client": "custom",
+        "file": "testdata/scan/vscode-mcp.jsonc",
+        "server": "api",
+        "where": "headers.X-API-Key"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC004",
+        "title": "Credential embedded in the server URL",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC004 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "https://mcp.capability.example/tenant/server/{masked:36}/mcp?user_id={masked:8}",
+        "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+        "detail": "The URL itself grants access (path segment 3 (uuid), query user_id (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "remote-bridge",
+        "where": "args[2]"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC004",
+        "title": "Credential embedded in the server URL",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC004 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "https://mcp.capability.example/apps/{masked:22}/mcp",
+        "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+        "detail": "The URL itself grants access (path segment 2 (high-entropy)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "cap-remote",
+        "where": "url"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC004",
+        "title": "Credential embedded in the server URL",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC004 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "https://mcp.example.com/sse{masked:16}",
+        "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+        "detail": "The URL itself grants access (query api_key (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "notes",
+        "where": "url"
+      },
+      {
+        "source": "sievant",
+        "ref": "SUP002",
+        "title": "Server fetched from a repository or URL at start",
+        "dimension": "security",
+        "tier": 3,
+        "weight": 0.75,
+        "deal_risk": false,
+        "why": "high security finding (Sievant SUP002)",
+        "week": 3,
+        "severity": "high",
+        "evidence": "github:example/mcp-server",
+        "fix": "Use a published release pinned to an exact version (or a commit hash).",
+        "detail": "The code that runs is whatever the repository or URL holds at launch time, outside any registry's checks and without a pinned release.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "git-source",
+        "where": "args"
+      },
+      {
+        "source": "sievant",
+        "ref": "SUP002",
+        "title": "Server launched by a script downloaded at start",
+        "dimension": "security",
+        "tier": 3,
+        "weight": 0.75,
+        "deal_risk": false,
+        "why": "high security finding (Sievant SUP002)",
+        "week": 3,
+        "severity": "high",
+        "evidence": "-c curl -fsSL https://example.com/install.sh | sh",
+        "fix": "Install a pinned release and run it directly.",
+        "detail": "Whatever the URL serves at launch time runs with the user's rights; it can change at any time without notice.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "installer",
+        "where": "args"
+      },
+      {
+        "source": "sievant",
+        "ref": "AUTH001",
+        "title": "Remote server with no credential configured",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": true,
+        "why": "medium security finding (Sievant AUTH001); deal risk",
+        "week": 4,
+        "severity": "medium",
+        "evidence": "https://mcp.example.com",
+        "fix": "Confirm the server requires authentication (OAuth or a header referenced from the environment).",
+        "detail": "No Authorization or API-key header is configured. The client may still sign in with OAuth when it connects; if it does not, anyone who can reach the URL can use the server's tools.",
+        "client": "custom",
+        "file": "testdata/scan/claude.json",
+        "server": "remote-noauth",
+        "where": "url"
+      },
+      {
+        "source": "sievant",
+        "ref": "PERM002",
+        "title": "Access to the whole home directory",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": true,
+        "why": "medium security finding (Sievant PERM002); deal risk",
+        "week": 4,
+        "severity": "medium",
+        "evidence": "~",
+        "fix": "Give the server only the directories it needs.",
+        "detail": "The home directory holds SSH keys, cloud credentials, shell history and browser data.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "home",
+        "where": "args[2]"
+      },
+      {
+        "source": "sievant",
+        "ref": "PERM003",
+        "title": "Server runs with the host network (container)",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": false,
+        "why": "medium security finding (Sievant PERM003)",
+        "week": 4,
+        "severity": "medium",
+        "evidence": "--network",
+        "fix": "Grant only the access the server needs (for Deno, --allow-net=<hosts>; for containers, a dedicated network).",
+        "detail": "The server can reach far more than its tools need, which widens what a compromised or manipulated server can do.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "docker",
+        "where": "args[3]"
+      },
+      {
+        "source": "sievant",
+        "ref": "PERM003",
+        "title": "Server runs with all permissions (Deno)",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": false,
+        "why": "medium security finding (Sievant PERM003)",
+        "week": 4,
+        "severity": "medium",
+        "evidence": "--allow-all",
+        "fix": "Grant only the access the server needs (for Deno, --allow-net=<hosts>; for containers, a dedicated network).",
+        "detail": "The server can reach far more than its tools need, which widens what a compromised or manipulated server can do.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "deno",
+        "where": "args[1]"
+      },
+      {
+        "source": "sievant",
+        "ref": "SUP001",
+        "title": "Unpinned server version",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": false,
+        "why": "medium security finding (Sievant SUP001)",
+        "week": 4,
+        "severity": "medium",
+        "evidence": "example/mcp-server",
+        "fix": "Pin the image by digest (image@sha256:…) or at least an exact version tag.",
+        "detail": "Each launch may run a different release, including a compromised one, without any change to this file.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "docker",
+        "where": "args"
+      },
+      {
+        "source": "sievant",
+        "ref": "SUP001",
+        "title": "Unpinned server version",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": false,
+        "why": "medium security finding (Sievant SUP001)",
+        "week": 4,
+        "severity": "medium",
+        "evidence": "@example/github-mcp",
+        "fix": "Pin an exact version, for example example/github-mcp@1.2.3 (with its scope), and update it deliberately.",
+        "detail": "Each launch may run a different release, including a compromised one, without any change to this file.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "github",
+        "where": "args"
+      },
+      {
+        "source": "sievant",
+        "ref": "SUP001",
+        "title": "Server pinned to a moving tag (latest)",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": false,
+        "why": "medium security finding (Sievant SUP001)",
+        "week": 4,
+        "severity": "medium",
+        "evidence": "example-mcp@latest",
+        "fix": "Pin an exact version (name==1.2.3) and update it deliberately.",
+        "detail": "Each launch may run a different release, including a compromised one, without any change to this file.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "latest",
+        "where": "args"
+      },
+      {
+        "source": "sievant",
+        "ref": "SVT001",
+        "title": "Launched through Sievant",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0,
+        "deal_risk": false,
+        "why": "info security finding (Sievant SVT001)",
+        "week": 4,
+        "severity": "info",
+        "detail": "This server already runs behind `sievant proxy`: its calls pass Sievant's guardrails.",
+        "client": "claude-desktop",
+        "file": "testdata/scan/claude_desktop_config.json",
+        "server": "wrapped"
+      }
+    ],
+    "notes": [
+      "Tool descriptions, and the resources and prompts each server offers, were not checked: that needs starting the servers (sievant scan --inspect-tools, which runs them)."
+    ]
+  },
+  "fix_plan": [
+    {
+      "week": 1,
+      "title": "Week 1: critical exposure and quick fixes",
+      "items": [
+        {
+          "source": "sievant",
+          "ref": "SEC001",
+          "title": "Hard-coded database URL with password",
+          "fix": "Move it to the environment or a secret store and reference it (for example ${SERVER_TOKEN}); then rotate it, since it has been on disk.",
+          "where": "testdata/scan/claude_desktop_config.json · db · args[2]"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC001",
+          "title": "Hard-coded GitHub token",
+          "fix": "Move it to the environment or a secret store and reference it (for example ${GITHUB_PERSONAL_ACCESS_TOKEN}); then rotate it, since it has been on disk.",
+          "where": "testdata/scan/claude_desktop_config.json · github · env.GITHUB_PERSONAL_ACCESS_TOKEN"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC001",
+          "title": "Hard-coded Slack token",
+          "fix": "Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.",
+          "where": "testdata/scan/cursor-mcp.json · slack · env.SLACK_BOT_TOKEN"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC001",
+          "title": "Hard-coded Anthropic API key",
+          "fix": "Reference it from the environment and rotate it.",
+          "where": "testdata/scan/windsurf-mcp_config.json · remote · headers.Authorization"
+        },
+        {
+          "source": "sievant",
+          "ref": "NET001",
+          "title": "Remote server over plain HTTP",
+          "fix": "Use {masked-url}.",
+          "where": "testdata/scan/claude.json · plain · url"
+        },
+        {
+          "source": "sievant",
+          "ref": "PERM001",
+          "title": "Access to the whole filesystem",
+          "fix": "Give the server only the directories it needs, for example the project directory.",
+          "where": "testdata/scan/claude_desktop_config.json · files · args[2]"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC002",
+          "title": "Literal value in secret-named field X-API-Key",
+          "fix": "Reference it from the environment (for example ${X_API_KEY}) and rotate it.",
+          "where": "testdata/scan/vscode-mcp.jsonc · api · headers.X-API-Key"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC004",
+          "title": "Credential embedded in the server URL",
+          "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+          "where": "testdata/scan/claude_desktop_config.json · remote-bridge · args[2]"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC004",
+          "title": "Credential embedded in the server URL",
+          "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+          "where": "testdata/scan/cursor-mcp.json · cap-remote · url"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC004",
+          "title": "Credential embedded in the server URL",
+          "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+          "where": "testdata/scan/cursor-mcp.json · notes · url"
+        },
+        {
+          "source": "tokvera",
+          "ref": "metrics_endpoint",
+          "title": "No Prometheus metrics at /metrics",
+          "fix": "Enable the server's metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there.",
+          "effort": "0.5 days"
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "title": "Week 2: the largest cost and latency failures",
+      "items": []
+    },
+    {
+      "week": 3,
+      "title": "Week 3: remaining high-severity security findings",
+      "items": [
+        {
+          "source": "sievant",
+          "ref": "SUP002",
+          "title": "Server fetched from a repository or URL at start",
+          "fix": "Use a published release pinned to an exact version (or a commit hash).",
+          "where": "testdata/scan/claude_desktop_config.json · git-source · args"
+        },
+        {
+          "source": "sievant",
+          "ref": "SUP002",
+          "title": "Server launched by a script downloaded at start",
+          "fix": "Install a pinned release and run it directly.",
+          "where": "testdata/scan/claude_desktop_config.json · installer · args"
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "title": "Week 4: everything else",
+      "items": [
+        {
+          "source": "sievant",
+          "ref": "AUTH001",
+          "title": "Remote server with no credential configured",
+          "fix": "Confirm the server requires authentication (OAuth or a header referenced from the environment).",
+          "where": "testdata/scan/claude.json · remote-noauth · url"
+        },
+        {
+          "source": "sievant",
+          "ref": "PERM002",
+          "title": "Access to the whole home directory",
+          "fix": "Give the server only the directories it needs.",
+          "where": "testdata/scan/claude_desktop_config.json · home · args[2]"
+        },
+        {
+          "source": "sievant",
+          "ref": "PERM003",
+          "title": "Server runs with the host network (container)",
+          "fix": "Grant only the access the server needs (for Deno, --allow-net=<hosts>; for containers, a dedicated network).",
+          "where": "testdata/scan/claude_desktop_config.json · docker · args[3]"
+        },
+        {
+          "source": "sievant",
+          "ref": "PERM003",
+          "title": "Server runs with all permissions (Deno)",
+          "fix": "Grant only the access the server needs (for Deno, --allow-net=<hosts>; for containers, a dedicated network).",
+          "where": "testdata/scan/cursor-mcp.json · deno · args[1]"
+        },
+        {
+          "source": "sievant",
+          "ref": "SUP001",
+          "title": "Unpinned server version",
+          "fix": "Pin the image by digest (image@sha256:…) or at least an exact version tag.",
+          "where": "testdata/scan/claude_desktop_config.json · docker · args"
+        },
+        {
+          "source": "sievant",
+          "ref": "SUP001",
+          "title": "Unpinned server version",
+          "fix": "Pin an exact version, for example example/github-mcp@1.2.3 (with its scope), and update it deliberately.",
+          "where": "testdata/scan/claude_desktop_config.json · github · args"
+        },
+        {
+          "source": "sievant",
+          "ref": "SUP001",
+          "title": "Server pinned to a moving tag (latest)",
+          "fix": "Pin an exact version (name==1.2.3) and update it deliberately.",
+          "where": "testdata/scan/claude_desktop_config.json · latest · args"
+        },
+        {
+          "source": "sievant",
+          "ref": "SVT001",
+          "title": "Launched through Sievant",
+          "fix": "",
+          "where": "testdata/scan/claude_desktop_config.json · wrapped"
+        }
+      ]
+    }
+  ],
+  "ranking": {
+    "scoring_version": "0.1.0",
+    "provisional": true,
+    "note": "Halotrcer's ranking across the two tools is provisional (scoring version 0.1.0): its tiers are judgement, not calibrated. See docs/scoring.md."
+  },
+  "privacy": "Halotrcer contacts only the target you give it (through Tokvera) and reads only the MCP configuration files Sievant reads, on this machine. It sends no telemetry. Secrets stay masked as each tool masks them; on top of that, Halotrcer drops URL credentials and query strings, hides environment values, shows your home directory as ~ and replaces your user name with <user>.",
+  "cta": {
+    "text": "AI Cost & Security Audit",
+    "url": "https://www.halotrcer.com/book"
+  }
+}

@@ -96,7 +96,7 @@ func Find(tool string) (string, error) {
 }
 
 func isExecutable(p string) bool {
-	fi, err := os.Stat(p)
+	fi, err := os.Stat(p) //nolint:gosec // G703: the user names this path (HALOTRCER_<TOOL>_BIN); only its mode is read
 	if err != nil || fi.IsDir() {
 		return false
 	}

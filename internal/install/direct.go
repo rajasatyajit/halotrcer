@@ -308,7 +308,9 @@ func readCapped(r io.Reader, archive string) ([]byte, error) {
 // Place writes the binary into dir atomically (a temp file in dir, then a
 // rename over any existing file), executable.
 func Place(dir, name string, bin []byte) (string, error) {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	// A bin directory is world-readable and searchable, as `mkdir -p` in
+	// the tools' installers leaves ~/.local/bin.
+	if err := os.MkdirAll(dir, 0o755); err != nil { //nolint:gosec // G301: a bin directory, see above
 		return "", err
 	}
 	dst := filepath.Join(dir, name)

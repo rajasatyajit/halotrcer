@@ -1,0 +1,57 @@
+{
+  "checks": [
+    {
+      "name": "tokvera",
+      "status": "info",
+      "detail": "v0.1.0-dev (commit b97e278, unknown, go1.27.2) at /home/fixtureuser/.local/bin/tokvera, installed as a single file (the install scripts or a release archive); update with: tokvera update"
+    },
+    {
+      "name": "config",
+      "status": "ok",
+      "detail": "/home/fixtureuser/.config/tokvera/config.yaml (not found; the defaults apply)"
+    },
+    {
+      "name": "data",
+      "status": "info",
+      "detail": "/home/fixtureuser/.local/share/tokvera (the observability stack's files go under stack/)"
+    },
+    {
+      "name": "pricing",
+      "status": "ok",
+      "detail": "embedded rate sheet as of 2026-10-11, 9 days old (scan warns after 60)"
+    },
+    {
+      "name": "docker",
+      "status": "ok",
+      "detail": "/usr/local/bin/docker"
+    },
+    {
+      "name": "compose",
+      "status": "ok",
+      "detail": "docker compose"
+    },
+    {
+      "name": "helm",
+      "status": "ok",
+      "detail": "/usr/bin/helm"
+    },
+    {
+      "name": "cosign",
+      "status": "ok",
+      "detail": "/home/fixtureuser/go/bin/cosign"
+    },
+    {
+      "name": "go",
+      "status": "ok",
+      "detail": "/usr/bin/go"
+    },
+    {
+      "name": "tokvera-cache",
+      "status": "warn",
+      "detail": "not beside tokvera or on PATH; tokvera cache runs it",
+      "fix": "download tokvera-cache_\u003cversion\u003e_\u003cos\u003e_\u003carch\u003e from the release (docs/install.md) and put it beside tokvera"
+    }
+  ],
+  "warnings": 1,
+  "failures": 0
+}

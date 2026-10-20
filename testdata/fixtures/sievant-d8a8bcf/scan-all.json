@@ -1,0 +1,398 @@
+{
+  "report_version": 1,
+  "generator": "sievant v0.1.0-157-gd8a8bcf",
+  "generated_at": "2026-10-20T14:27:43Z",
+  "tools_inspected": false,
+  "files": [
+    {
+      "client": "claude-desktop",
+      "path": "testdata/scan/claude_desktop_config.json",
+      "scope": "file",
+      "servers": [
+        {
+          "name": "db",
+          "transport": "stdio",
+          "findings": 1
+        },
+        {
+          "name": "docker",
+          "transport": "stdio",
+          "findings": 2
+        },
+        {
+          "name": "files",
+          "transport": "stdio",
+          "findings": 1
+        },
+        {
+          "name": "git-source",
+          "transport": "stdio",
+          "findings": 1
+        },
+        {
+          "name": "github",
+          "transport": "stdio",
+          "findings": 2
+        },
+        {
+          "name": "home",
+          "transport": "stdio",
+          "findings": 1
+        },
+        {
+          "name": "installer",
+          "transport": "stdio",
+          "findings": 1
+        },
+        {
+          "name": "latest",
+          "transport": "stdio",
+          "findings": 1
+        },
+        {
+          "name": "pinned-py",
+          "transport": "stdio",
+          "findings": 0
+        },
+        {
+          "name": "remote-bridge",
+          "transport": "stdio",
+          "findings": 1
+        },
+        {
+          "name": "wrapped",
+          "transport": "stdio",
+          "wrapped": true,
+          "findings": 0
+        }
+      ]
+    },
+    {
+      "client": "custom",
+      "path": "testdata/scan/claude.json",
+      "scope": "file",
+      "servers": [
+        {
+          "name": "remote-noauth",
+          "transport": "http",
+          "findings": 1
+        },
+        {
+          "name": "local",
+          "transport": "http",
+          "findings": 0
+        },
+        {
+          "name": "plain",
+          "transport": "http",
+          "findings": 1
+        }
+      ]
+    },
+    {
+      "client": "custom",
+      "path": "testdata/scan/cursor-mcp.json",
+      "scope": "file",
+      "servers": [
+        {
+          "name": "cap-remote",
+          "transport": "http",
+          "findings": 1
+        },
+        {
+          "name": "deno",
+          "transport": "stdio",
+          "findings": 1
+        },
+        {
+          "name": "notes",
+          "transport": "http",
+          "findings": 1
+        },
+        {
+          "name": "slack",
+          "transport": "stdio",
+          "findings": 1
+        }
+      ]
+    },
+    {
+      "client": "custom",
+      "path": "testdata/scan/vscode-mcp.jsonc",
+      "scope": "file",
+      "servers": [
+        {
+          "name": "api",
+          "transport": "http",
+          "findings": 1
+        },
+        {
+          "name": "gh",
+          "transport": "stdio",
+          "findings": 0
+        }
+      ]
+    },
+    {
+      "client": "custom",
+      "path": "testdata/scan/windsurf-mcp_config.json",
+      "scope": "file",
+      "servers": [
+        {
+          "name": "remote",
+          "transport": "http",
+          "findings": 1
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "rule": "SEC001",
+      "severity": "critical",
+      "title": "Hard-coded database URL with password",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "db",
+      "where": "args[2]",
+      "evidence": "post… (29 chars)",
+      "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+      "fix": "Move it to the environment or a secret store and reference it (for example ${SERVER_TOKEN}); then rotate it, since it has been on disk."
+    },
+    {
+      "rule": "SEC001",
+      "severity": "critical",
+      "title": "Hard-coded GitHub token",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "github",
+      "where": "env.GITHUB_PERSONAL_ACCESS_TOKEN",
+      "evidence": "ghp_… (40 chars)",
+      "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+      "fix": "Move it to the environment or a secret store and reference it (for example ${GITHUB_PERSONAL_ACCESS_TOKEN}); then rotate it, since it has been on disk."
+    },
+    {
+      "rule": "SEC001",
+      "severity": "critical",
+      "title": "Hard-coded Slack token",
+      "client": "custom",
+      "file": "testdata/scan/cursor-mcp.json",
+      "server": "slack",
+      "where": "env.SLACK_BOT_TOKEN",
+      "evidence": "xoxb… (28 chars)",
+      "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+      "fix": "Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk."
+    },
+    {
+      "rule": "SEC001",
+      "severity": "critical",
+      "title": "Hard-coded Anthropic API key",
+      "client": "custom",
+      "file": "testdata/scan/windsurf-mcp_config.json",
+      "server": "remote",
+      "where": "headers.Authorization",
+      "evidence": "sk-a… (53 chars)",
+      "detail": "The Authorization header holds a literal credential.",
+      "fix": "Reference it from the environment and rotate it."
+    },
+    {
+      "rule": "NET001",
+      "severity": "high",
+      "title": "Remote server over plain HTTP",
+      "client": "custom",
+      "file": "testdata/scan/claude.json",
+      "server": "plain",
+      "where": "url",
+      "evidence": "http://mcp.internal.example:8080",
+      "detail": "Requests, results and any credential travel unencrypted and can be read or changed on the network.",
+      "fix": "Use https://."
+    },
+    {
+      "rule": "PERM001",
+      "severity": "high",
+      "title": "Access to the whole filesystem",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "files",
+      "where": "args[2]",
+      "evidence": "/",
+      "detail": "The server is given the filesystem root: every file the user can read (keys, browser profiles, other projects) is in reach of the agent and of anything that injects instructions into it.",
+      "fix": "Give the server only the directories it needs, for example the project directory."
+    },
+    {
+      "rule": "SUP002",
+      "severity": "high",
+      "title": "Server fetched from a repository or URL at start",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "git-source",
+      "where": "args",
+      "evidence": "github:example/mcp-server",
+      "detail": "The code that runs is whatever the repository or URL holds at launch time, outside any registry's checks and without a pinned release.",
+      "fix": "Use a published release pinned to an exact version (or a commit hash)."
+    },
+    {
+      "rule": "SUP002",
+      "severity": "high",
+      "title": "Server launched by a script downloaded at start",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "installer",
+      "where": "args",
+      "evidence": "-c curl -fsSL https://example.com/install.sh | sh",
+      "detail": "Whatever the URL serves at launch time runs with the user's rights; it can change at any time without notice.",
+      "fix": "Install a pinned release and run it directly."
+    },
+    {
+      "rule": "SEC004",
+      "severity": "high",
+      "title": "Credential embedded in the server URL",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "remote-bridge",
+      "where": "args[2]",
+      "evidence": "https://mcp.capability.example/tenant/server/{masked:36}/mcp?user_id={masked:8}",
+      "detail": "The URL itself grants access (path segment 3 (uuid), query user_id (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+      "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment."
+    },
+    {
+      "rule": "SEC004",
+      "severity": "high",
+      "title": "Credential embedded in the server URL",
+      "client": "custom",
+      "file": "testdata/scan/cursor-mcp.json",
+      "server": "cap-remote",
+      "where": "url",
+      "evidence": "https://mcp.capability.example/apps/{masked:22}/mcp",
+      "detail": "The URL itself grants access (path segment 2 (high-entropy)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+      "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment."
+    },
+    {
+      "rule": "SEC004",
+      "severity": "high",
+      "title": "Credential embedded in the server URL",
+      "client": "custom",
+      "file": "testdata/scan/cursor-mcp.json",
+      "server": "notes",
+      "where": "url",
+      "evidence": "https://mcp.example.com/sse?api_key={masked:16}",
+      "detail": "The URL itself grants access (query api_key (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+      "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment."
+    },
+    {
+      "rule": "SEC002",
+      "severity": "high",
+      "title": "Literal value in secret-named field X-API-Key",
+      "client": "custom",
+      "file": "testdata/scan/vscode-mcp.jsonc",
+      "server": "api",
+      "where": "headers.X-API-Key",
+      "evidence": "lite… (21 chars)",
+      "detail": "The field's name says it holds a credential, and its value is written in the file rather than referenced.",
+      "fix": "Reference it from the environment (for example ${X_API_KEY}) and rotate it."
+    },
+    {
+      "rule": "AUTH001",
+      "severity": "medium",
+      "title": "Remote server with no credential configured",
+      "client": "custom",
+      "file": "testdata/scan/claude.json",
+      "server": "remote-noauth",
+      "where": "url",
+      "evidence": "https://mcp.example.com",
+      "detail": "No Authorization or API-key header is configured. The client may still sign in with OAuth when it connects; if it does not, anyone who can reach the URL can use the server's tools.",
+      "fix": "Confirm the server requires authentication (OAuth or a header referenced from the environment)."
+    },
+    {
+      "rule": "PERM003",
+      "severity": "medium",
+      "title": "Server runs with the host network (container)",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "docker",
+      "where": "args[3]",
+      "evidence": "--network",
+      "detail": "The server can reach far more than its tools need, which widens what a compromised or manipulated server can do.",
+      "fix": "Grant only the access the server needs (for Deno, --allow-net=\u003chosts\u003e; for containers, a dedicated network)."
+    },
+    {
+      "rule": "SUP001",
+      "severity": "medium",
+      "title": "Unpinned server version",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "docker",
+      "where": "args",
+      "evidence": "example/mcp-server",
+      "detail": "Each launch may run a different release, including a compromised one, without any change to this file.",
+      "fix": "Pin the image by digest (image@sha256:…) or at least an exact version tag."
+    },
+    {
+      "rule": "SUP001",
+      "severity": "medium",
+      "title": "Unpinned server version",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "github",
+      "where": "args",
+      "evidence": "@example/github-mcp",
+      "detail": "Each launch may run a different release, including a compromised one, without any change to this file.",
+      "fix": "Pin an exact version, for example example/github-mcp@1.2.3 (with its scope), and update it deliberately."
+    },
+    {
+      "rule": "PERM002",
+      "severity": "medium",
+      "title": "Access to the whole home directory",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "home",
+      "where": "args[2]",
+      "evidence": "~",
+      "detail": "The home directory holds SSH keys, cloud credentials, shell history and browser data.",
+      "fix": "Give the server only the directories it needs."
+    },
+    {
+      "rule": "SUP001",
+      "severity": "medium",
+      "title": "Server pinned to a moving tag (latest)",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "latest",
+      "where": "args",
+      "evidence": "example-mcp@latest",
+      "detail": "Each launch may run a different release, including a compromised one, without any change to this file.",
+      "fix": "Pin an exact version (name==1.2.3) and update it deliberately."
+    },
+    {
+      "rule": "PERM003",
+      "severity": "medium",
+      "title": "Server runs with all permissions (Deno)",
+      "client": "custom",
+      "file": "testdata/scan/cursor-mcp.json",
+      "server": "deno",
+      "where": "args[1]",
+      "evidence": "--allow-all",
+      "detail": "The server can reach far more than its tools need, which widens what a compromised or manipulated server can do.",
+      "fix": "Grant only the access the server needs (for Deno, --allow-net=\u003chosts\u003e; for containers, a dedicated network)."
+    },
+    {
+      "rule": "SVT001",
+      "severity": "info",
+      "title": "Launched through Sievant",
+      "client": "claude-desktop",
+      "file": "testdata/scan/claude_desktop_config.json",
+      "server": "wrapped",
+      "detail": "This server already runs behind `sievant proxy`: its calls pass Sievant's guardrails."
+    }
+  ],
+  "counts": {
+    "critical": 4,
+    "high": 8,
+    "info": 1,
+    "low": 0,
+    "medium": 7
+  },
+  "notes": [
+    "Tool descriptions, and the resources and prompts each server offers, were not checked: that needs starting the servers (sievant scan --inspect-tools, which runs them)."
+  ]
+}

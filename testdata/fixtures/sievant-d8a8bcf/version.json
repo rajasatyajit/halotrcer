@@ -1,0 +1,8 @@
+{
+  "version": "v0.1.0-157-gd8a8bcf",
+  "commit": "d8a8bcf0694e",
+  "go": "go1.26.9",
+  "os": "linux",
+  "arch": "amd64",
+  "rawsql": false
+}

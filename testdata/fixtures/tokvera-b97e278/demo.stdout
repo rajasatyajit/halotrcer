@@ -1,0 +1,12 @@
+SIMULATED: measured against the built-in demo server; these numbers describe no real endpoint.
+The timings are simulated (declared by the demo server, not measured by the clock), so every machine gets the same numbers and grade.
+Efficiency Score: D (60.8 / 100, provisional scoring 0.9.0)
+  capped at D: more than 5% of requests failed
+  capped at C: time to first token collapses under load
+Requests: 60 sent, 55 succeeded.
+  1. [fail] Time to first token collapses under load: p99 201 ms at concurrency 16 against 11 ms at concurrency 1
+  2. [fail] Requests are failing: 5 of 60 requests failed (HTTP 429 ×5)
+  3. [fail] Many prompts repeat exactly: 16 of 40 prompts in the demo sample repeat an earlier one exactly
+  4. [warn] No Prometheus metrics at /metrics: no Prometheus exposition answered at /metrics on the target's origin
+Report: demo/report.html
+Data:   demo/report.json

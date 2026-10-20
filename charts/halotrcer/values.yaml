@@ -1,0 +1,11 @@
+# Halotrcer's umbrella chart installs nothing of its own: it carries Tokvera's
+# and Sievant's released charts. Both are off by default (PLAN.md D8), because
+# each needs settings only you can give; NOTES.txt says which. Every other key
+# under `tokvera:` and `sievant:` is passed to that chart unchanged, so their
+# own values.yaml and docs are the reference:
+#   Tokvera: https://github.com/rajasatyajit/tokvera/blob/main/deploy/helm/tokvera/values.yaml
+#   Sievant: https://github.com/rajasatyajit/sievant/blob/main/charts/sievant/values.yaml
+tokvera:
+  enabled: false
+sievant:
+  enabled: false

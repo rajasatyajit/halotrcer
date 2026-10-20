@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Halotrcer umbrella chart values",
+  "description": "Only the two switches are Halotrcer's; everything else under tokvera and sievant is validated by that chart's own schema.",
+  "type": "object",
+  "properties": {
+    "tokvera": {
+      "type": "object",
+      "properties": {"enabled": {"type": "boolean"}},
+      "required": ["enabled"]
+    },
+    "sievant": {
+      "type": "object",
+      "properties": {"enabled": {"type": "boolean"}},
+      "required": ["enabled"]
+    },
+    "global": {"type": "object"}
+  },
+  "required": ["tokvera", "sievant"],
+  "additionalProperties": false
+}

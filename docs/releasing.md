@@ -29,17 +29,18 @@ Halotrcer bundles two other releases, so it can only be released after both of t
 1. **Pin the tools.** Fill in `packaging/bundled-tools.env` with the Tokvera and Sievant release this version bundles: the tag, the image digest and the chart digest of each.
    - Read the digests with `docker buildx imagetools inspect ghcr.io/rajasatyajit/<tool>:vX.Y.Z` and `oras resolve ghcr.io/rajasatyajit/charts/<tool>:X.Y.Z`.
    - `TestBundledToolsInMatrix` refuses a version outside the compatibility matrix.
-   - The publish phase cosign-verifies each digest against the exact identity of that tag's release run (`https://github.com/rajasatyajit/<tool>/.github/workflows/release.yml@refs/tags/vX.Y.Z`). A digest from any other run is refused.
+   - Both phases check that each image digest names an image index and each chart digest a Helm chart, and cosign-verify each against the identity of that tag's release workflow (`https://github.com/rajasatyajit/<tool>/.github/workflows/release.yml@refs/tags/vX.Y.Z`). An artifact signed for any other tag, or by anything else, is refused.
+   - A stable Halotrcer tag must pin stable tool releases; a release candidate may pin release candidates.
 2. **Merge to `main`** with every gate green, CI included.
 3. **Tag `vX.Y.Z`** on that commit and push the tag.
-4. **The draft phase runs.** It checks the tag's shape, that the repository is public, that the tag is on `origin/main`, the secrets, that the keys match `packaging/keys/`, and the pins. Then it runs the gates, builds, signs, attests and uploads the draft.
+4. **The draft phase runs.** It checks the tag's shape, that the repository is public, that the tag is on `origin/main`, the secrets, that the keys match `packaging/keys/`, and the pins. It verifies the pinned images and charts and builds the umbrella chart from them. Then it runs the gates, builds, signs, attests and uploads the draft.
 5. **Read the draft.** Check the archives, packages, SBOMs, `checksums.txt`, its `.sigstore.json` and the provenance bundle, then publish it.
 6. **The publish phase runs, in this order:**
-   1. It verifies the published `checksums.txt`, then the bundled tools' images and charts.
+   1. It verifies the published `checksums.txt`, then the bundled tools' images and charts, and builds the umbrella chart from them. Nothing is published before these pass.
    2. It rebuilds, and every archive must be byte-identical to the published one and carry phase 1's provenance.
    3. It pushes the image (halotrcer, tokvera and sievant), the cask, the Scoop manifest and the winget pull request.
    4. It attests the image.
-   5. It vendors the two verified charts into the umbrella chart, then pushes, signs and attests the chart.
+   5. It pushes, signs and attests the umbrella chart.
    6. For a stable tag only, it verifies the published deb and rpm packages and adds them to `rajasatyajit/packages` gh-pages:
       - it follows the shared repository contract;
       - it retries up to 3 times if Tokvera's or Sievant's publishing moves the branch.

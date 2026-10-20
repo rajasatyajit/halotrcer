@@ -32,6 +32,13 @@ env:
   # actionlint_1.7.12_linux_amd64.tar.gz, from
   # https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_checksums.txt
   ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+  # The release tools' pins, the same as release.yml's and both tools'.
+  GORELEASER_VERSION: 2.18.3
+  # goreleaser_Linux_x86_64.tar.gz
+  GORELEASER_SHA256: b8dee4728bca1aba0d71a832a17cd0a3799f75372878e7ffa36aef2343bce0bc
+  HELM_VERSION: 4.3.0
+  # helm-v4.3.0-linux-amd64.tar.gz
+  HELM_SHA256: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
 
 jobs:
   ci:
@@ -55,7 +62,7 @@ jobs:
           go-version: ${{ steps.go.outputs.version }}
           cache: false
 
-      - name: Install golangci-lint, gitleaks and actionlint (pinned, checksum-verified)
+      - name: Install golangci-lint, gitleaks, actionlint, goreleaser and helm (pinned, checksum-verified)
         run: |
           set -eu
           dir="$RUNNER_TEMP/tools"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
@@ -71,6 +78,15 @@ jobs:
           curl -fsSLo "$f" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$f"
           echo "${ACTIONLINT_SHA256}  $f" | sha256sum -c -
           tar xzf "$f" -C "$dir" actionlint
+          f=goreleaser_Linux_x86_64.tar.gz
+          curl -fsSLo "$f" "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/$f"
+          echo "${GORELEASER_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" goreleaser
+          # helm for the umbrella chart's packaging test (make test)
+          f="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSLo "$f" "https://get.helm.sh/$f"
+          echo "${HELM_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" --strip-components=1 linux-amd64/helm
           echo "$dir" >> "$GITHUB_PATH"
 
       - name: Install PDF checkers
@@ -83,6 +99,8 @@ jobs:
           gitleaks version
           actionlint -version
           qpdf --version | head -1
+          goreleaser --version | grep GitVersion
+          helm version --short
 
       - name: go mod tidy is a no-op
         run: go mod tidy && test -z "$(git status --porcelain -- go.mod go.sum)"
@@ -101,3 +119,5 @@ jobs:
         run: make actionlint ACTIONLINT=actionlint
       - name: shellcheck (v0.9.0 and v0.11.0 images)
         run: make shellcheck
+      - name: goreleaser check
+        run: make release-check

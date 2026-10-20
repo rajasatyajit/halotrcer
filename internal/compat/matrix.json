@@ -1,0 +1,15 @@
+{
+  "matrix_version": 1,
+  "tools": {
+    "tokvera": {
+      "min": "0.2.0",
+      "below": "0.3.0",
+      "schema_prefix": "tokvera.scan-report/v1."
+    },
+    "sievant": {
+      "min": "0.2.0",
+      "below": "0.3.0",
+      "report_version": 1
+    }
+  }
+}

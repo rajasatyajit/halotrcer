@@ -51,6 +51,13 @@ var systemNames = map[string]bool{
 // as secrets.
 var secretNameRE = regexp.MustCompile(`(?i)(key|token|secret|passw|pwd|auth|credential|cookie|session|bearer)`)
 
+// notSecret are variables whose names match secretNameRE but hold the
+// shell's working directory, sockets or session plumbing, not credentials:
+// scrubbing their values would hide ordinary paths.
+var notSecret = map[string]bool{
+	"PWD": true, "OLDPWD": true, "SSH_AUTH_SOCK": true, "XAUTHORITY": true, "DBUS_SESSION_BUS_ADDRESS": true,
+}
+
 // minSecretLen keeps short, common values (such as "1" or "true") from
 // being scrubbed out of unrelated text.
 const minSecretLen = 8
@@ -79,7 +86,7 @@ func FromEnvironment(extraSecretVars ...string) Options {
 		if !ok || v == "" {
 			continue
 		}
-		if extra[k] || secretNameRE.MatchString(k) {
+		if extra[k] || (secretNameRE.MatchString(k) && !notSecret[k] && !strings.HasPrefix(k, "XDG_")) {
 			o.Secrets = append(o.Secrets, v)
 		}
 	}

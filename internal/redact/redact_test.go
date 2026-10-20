@@ -68,13 +68,15 @@ func TestFromEnvironment(t *testing.T) {
 	t.Setenv("MY_API_TOKEN", "tok-canary-abcdefgh12345678")
 	t.Setenv("PLAIN_VALUE", "not-secret-but-named-later")
 	t.Setenv("PLAIN_SETTING", "visible-value-123")
+	t.Setenv("PWD", "/work/dir/visible")
+	t.Setenv("XDG_SESSION_PATH", "/org/freedesktop/visible")
 	r := New(FromEnvironment("PLAIN_VALUE"))
-	in := "canaryperson used tok-canary-abcdefgh12345678 and not-secret-but-named-later and visible-value-123"
+	in := "canaryperson used tok-canary-abcdefgh12345678 and not-secret-but-named-later and visible-value-123 in /work/dir/visible /org/freedesktop/visible"
 	out := r.String(in)
 	if l := Leaks(out, "canaryperson", "tok-canary-abcdefgh12345678", "not-secret-but-named-later"); len(l) > 0 {
 		t.Errorf("leaked %v in %q", l, out)
 	}
-	if !strings.Contains(out, "visible-value-123") {
+	if !strings.Contains(out, "visible-value-123") || !strings.Contains(out, "/work/dir/visible") || !strings.Contains(out, "/org/freedesktop/visible") {
 		t.Errorf("over-redacted: %q", out)
 	}
 }

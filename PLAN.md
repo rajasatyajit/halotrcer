@@ -55,6 +55,14 @@ These change the design. The brief's wording is kept in the requirements below w
 - **D11:** the NOTICE copyright line is "Satyajit Rajaraman / Halotrcer".
 - **C12:** `toolchain go1.27.2`, golangci-lint v2.14.0, govulncheck v1.9.0, actionlint v1.7.12 and gitleaks v8.30.1. Each was checked against its upstream release page on 2026-10-20.
 
+### Implementation decisions taken in M1 (for review)
+
+- **I1: the install channel follows D5.** A tool that is already installed is upgraded through the channel that owns it. Ownership is detected from a brew Caskroom path, the scoop and winget directories, dpkg/rpm/apk file ownership, or GOBIN, as `tokvera doctor` reports install kinds. A fresh install uses brew on macOS, then scoop and winget on Windows, when present: none of them needs root. Otherwise it uses the direct verified download. apt, dnf and apk are never the default. On Linux they are almost always present, so choosing them would turn every `halotrcer install` into printed commands; they are used only when they already own the tool, or with `--via`, and then their commands are printed (D5).
+- **I2: `check` keeps Tokvera's confirmation.** Tokvera refuses to send load without a terminal unless `--yes` is given. `halotrcer check` therefore runs Tokvera's own `--dry-run`, shows the plan and asks, and passes `--yes` only after a yes or with `halotrcer check --yes`. `--demo` (Tokvera's built-in simulator) needs no confirmation.
+- **I3: Tokvera's provisional label.** report.json carries `score.provisional` and `scoring_version`, not the words. The words come from Tokvera's documentation (docs/scoring.md:94), and the report shows them verbatim. *Cross-repo suggestion for Tokvera, not made from here:* adding the label and the note to report.json would remove the copy.
+- **I4: mirrors.** `HALOTRCER_INSTALL_DOWNLOAD_BASE` and `HALOTRCER_INSTALL_API_BASE` are owner-level bases, with `/<repo>/…` appended, because Halotrcer installs from three repositories.
+- **I5: PDF metrics.** Glyph widths come from Adobe's Core 14 AFM files, with their notice and licence kept (internal/pdf/AFM-LICENSE.txt, NOTICE).
+
 ## 2. Milestones
 
 Each milestone is one branch (`m1-cli`, `m2-channels`, `m3-installers`, `m4-smoke`, `m5-docs`) with one commit per logical change. A milestone merges to `main` only when every gate in CLAUDE.md passes. I stop and report at each milestone's end. I never push, tag or publish.

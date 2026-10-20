@@ -13,6 +13,24 @@ Working rules for coding agents in this repository. PLAN.md is the source of tru
   - never run a git command there that changes a branch, the index or tags;
   - never build inside them (if a build is approved, the output goes to the scratch directory).
 
+## Commands
+```sh
+make build       # bin/halotrcer (CGO_ENABLED=0, -trimpath, stock toolchain from go.mod)
+make gates       # vet (gofmt first), race tests, lint, vuln (toolchain-check first), secrets, actionlint, shellcheck
+go test ./internal/report -update   # rewrite the report goldens; the diff is the review
+```
+- Layout:
+  - `cmd/halotrcer` holds the CLI.
+  - `internal/compat` holds the matrix and the schema gates.
+  - `internal/ingest` decodes the tools' JSON.
+  - `internal/scoring` does the ranking (docs/scoring.md).
+  - `internal/redact` is the scrubber.
+  - `internal/report` holds the model and the HTML, PDF and JSON renderers.
+  - `internal/pdf` is the PDF writer.
+  - `internal/tools` runs the binaries.
+  - `internal/check`, `internal/install` and `internal/doctor` implement the commands.
+- `testdata/fixtures/` holds the tools' real outputs from pinned commits (its README records how each was made).
+
 ## Facts about the tools
 - Read every version, flag, field and name from their repositories, and cite the file. Never invent one.
 - When a fact can't be found, write VERIFY and ask.

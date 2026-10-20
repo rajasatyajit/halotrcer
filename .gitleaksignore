@@ -7,7 +7,7 @@
 cmd/halotrcer/commands_test.go:generic-api-key:50
 # redact_test.go: "tok-canary-..." in MY_API_TOKEN
 b6d9ff8bc7e09060fd47e1b5243c924f5827480d:internal/redact/redact_test.go:generic-api-key:68
-internal/redact/redact_test.go:generic-api-key:68
+internal/redact/redact_test.go:generic-api-key:71
 # report_test.go: the "sk-canary-..." secret planted in every report field
 bb87f43d9eabc83892bd0be50948b3b8162460e2:internal/report/report_test.go:generic-api-key:203
 internal/report/report_test.go:generic-api-key:203

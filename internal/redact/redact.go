@@ -169,9 +169,10 @@ func (r *Redactor) homeToTilde(s string) string {
 	return s
 }
 
-// replacePrefixBounded replaces home with "~" wherever it appears followed by
-// a separator, a quote or the end of the string, so /home/al does not eat
-// /home/alice.
+// replacePrefixBounded replaces home with "~" wherever it is followed by a
+// byte that cannot continue a path name (a separator, punctuation such as
+// ':' or ')', whitespace) or the end of the string, so /home/al does not
+// eat /home/alice.
 func replacePrefixBounded(s, home, needle string) string {
 	hay := s
 	if needle != home {
@@ -187,7 +188,7 @@ func replacePrefixBounded(s, home, needle string) string {
 		}
 		j += i
 		end := j + len(needle)
-		if end == len(s) || strings.ContainsRune(`/\"' `, rune(s[end])) {
+		if end == len(s) || !pathNameByte(s[end]) {
 			b.WriteString(s[i:j])
 			b.WriteString("~")
 		} else {
@@ -195,6 +196,13 @@ func replacePrefixBounded(s, home, needle string) string {
 		}
 		i = end
 	}
+}
+
+// pathNameByte reports whether c can continue a file name (letters, digits,
+// '.', '_', '-', and any byte of a multi-byte character).
+func pathNameByte(c byte) bool {
+	return c >= 0x80 || c == '.' || c == '_' || c == '-' ||
+		(c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 // URL keeps a URL's scheme, host and path, drops userinfo, query and

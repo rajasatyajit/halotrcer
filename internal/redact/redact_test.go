@@ -40,6 +40,9 @@ func TestStringHomeUserSecrets(t *testing.T) {
 		"short stays":                                   "short stays", // below minSecretLen
 		"see https://u:p@h.example/p?token=abc.":        "see https://h.example/p.",
 		`{"path":"/home/fixtureuser/a"}`:                `{"path":"~/a"}`,
+		"open /home/fixtureuser: permission denied":     "open ~: permission denied",
+		"(in /home/fixtureuser)\nnext":                  "(in ~)\nnext",
+		"/home/fixtureuser.old/x":                       "/home/<user>.old/x", // not the home dir; the name is still hidden
 	}
 	for in, want := range cases {
 		if got := r.String(in); got != want {

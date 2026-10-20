@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<meta name="referrer" content="no-referrer">
+<title>Halotrcer report: http://127.0.0.1:18089/v1</title>
+<style>
+:root{--bg:#fbfbf9;--fg:#1d2126;--muted:#5d6670;--line:#dfe2e5;--card:#fff;--accent:#1f5f8b;--crit:#a3262a;--high:#c2561a;--med:#9a6f00;--low:#4b6b8a;--ok:#2c7a4b;--tag:#eef1f4}
+@media (prefers-color-scheme:dark){:root{--bg:#14171a;--fg:#e4e7ea;--muted:#9aa3ad;--line:#2c3238;--card:#1b1f23;--accent:#6fb0de;--crit:#ef6b6f;--high:#f0955c;--med:#e3be4f;--low:#8fb0cf;--ok:#6cc391;--tag:#262c32}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:20px;margin:36px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}h3{font-size:16px;margin:20px 0 8px}
+.muted{color:var(--muted)}.small{font-size:13px}
+.banner{border:1px solid var(--line);border-left:4px solid var(--high);background:var(--card);padding:10px 14px;margin:12px 0;border-radius:6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0 18px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.tile .k{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}.tile .v{font-size:24px;font-weight:650;margin-top:2px}.tile .n{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:10px;background:var(--tag);color:var(--muted);margin-left:4px;white-space:nowrap}
+.tag.deal{color:var(--crit);font-weight:600}
+.sev{font-weight:600;text-transform:capitalize}.sev-critical{color:var(--crit)}.sev-high{color:var(--high)}.sev-medium{color:var(--med)}.sev-low,.sev-info{color:var(--low)}.st-fail{color:var(--crit);font-weight:600}.st-warn{color:var(--med);font-weight:600}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--card)}th,td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--line)}th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+ol.top{padding-left:22px;margin:0}ol.top li{margin:0 0 12px}
+.find{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:0 0 10px}.find p{margin:4px 0}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--tag);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
+.week{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:0 0 12px}.week ul{margin:6px 0 0;padding-left:20px}.week li{margin:0 0 6px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line)}
+.cta{display:block;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:14px 16px;margin:16px 0}.cta a{color:var(--accent);font-weight:650}
+a{color:var(--accent)}
+@media print{body{background:#fff;color:#000}main{max-width:none;padding:0}.tile,.find,.week,.cta,table{break-inside:avoid}a{color:#000}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Halotrcer report</h1>
+<div class="muted">Target <code>http://127.0.0.1:18089/v1</code> · 2026-10-20 12:00 UTC · halotrcer test</div>
+<div class="muted small">Tokvera v0.1.0-dev (ok) · Sievant v0.1.0-157-gd8a8bcf (ok)</div>
+<div class="banner small">tokvera v0.1.0-dev is outside the versions this release supports (&gt;=0.2.0 &lt;0.3.0)</div>
+
+</header>
+
+<section id="summary">
+<h2>Executive summary</h2>
+<div class="tiles">
+<div class="tile"><div class="k">Efficiency grade (Tokvera)</div><div class="v">D</div><div class="n">Provisional scoring · reliability concern</div></div>
+<div class="tile"><div class="k">Cost per 1,000 requests</div><div class="v">—</div><div class="n">not computed</div></div>
+
+<div class="tile"><div class="k">Agent security (Sievant)</div><div class="v">1 critical · 3 high</div><div class="n">2 MCP configuration file(s) read</div></div>
+<div class="tile"><div class="k">Deal risk</div><div class="v">4</div><div class="n">findings a customer security review would flag</div></div>
+</div>
+<p class="banner"><strong>Reliability concern:</strong> Tokvera graded this endpoint D. Shown beside the grade; it is not counted as deal risk.</p>
+<h3>Top 5 findings, ranked by business impact</h3>
+<ol class="top">
+<li><strong>Hard-coded Slack token</strong><span class="tag deal">deal risk</span><span class="tag">Sievant SEC001</span><span class="tag">security</span><br>
+<span class="small muted">critical security finding (Sievant SEC001) · server <code>slack</code> · <code>env.SLACK_BOT_TOKEN</code></span><br><span class="small">Fix: Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.</span></li>
+<li><strong>Literal value in secret-named field X-API-Key</strong><span class="tag deal">deal risk</span><span class="tag">Sievant SEC002</span><span class="tag">security</span><br>
+<span class="small muted">deal risk: a customer security review would flag Sievant SEC002 (high) · server <code>api</code> · <code>headers.X-API-Key</code></span><br><span class="small">Fix: Reference it from the environment (for example ${X_API_KEY}) and rotate it.</span></li>
+<li><strong>Credential embedded in the server URL</strong><span class="tag deal">deal risk</span><span class="tag">Sievant SEC004</span><span class="tag">security</span><br>
+<span class="small muted">deal risk: a customer security review would flag Sievant SEC004 (high) · server <code>cap-remote</code> · <code>url</code></span><br><span class="small">Fix: Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</span></li>
+<li><strong>Credential embedded in the server URL</strong><span class="tag deal">deal risk</span><span class="tag">Sievant SEC004</span><span class="tag">security</span><br>
+<span class="small muted">deal risk: a customer security review would flag Sievant SEC004 (high) · server <code>notes</code> · <code>url</code></span><br><span class="small">Fix: Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</span></li>
+<li><strong>Time to first token collapses under load</strong><span class="tag">Tokvera ttft_p99_load_ratio</span><span class="tag">latency</span><br>
+<span class="small muted">Tokvera fail on latency, impact 35 grade points (at or above the median 20)</span><br><span class="small">Fix: Find the saturation point in the level table and keep traffic below it: raise the server&#39;s batch and concurrent-sequence limits if memory allows, add replicas behind the endpoint, or put an admission limit in front so excess requests fail fast instead of queueing.</span></li>
+</ol>
+</section>
+
+<section id="cost-performance">
+<h2>Cost &amp; performance</h2>
+<p class="small muted">From Tokvera: <code>http://127.0.0.1:38409/v1</code>, model <code>tokvera-sim-demo</code>.</p>
+<div class="banner"><strong>Simulated.</strong> Tokvera measured its built-in demo server with declared, not measured, timings; these numbers describe no real endpoint.</div>
+<p><strong>Efficiency grade: D</strong> (60.8 / 100, scoring 0.9.0)</p>
+<p class="small"><strong>Provisional scoring.</strong> The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0.</p>
+<p class="small muted">capped at D: more than 5% of requests failed</p><p class="small muted">capped at C: time to first token collapses under load</p>
+<p class="small">Requests: 60 sent, 55 succeeded, 5 failed, in 0.8 s.</p>
+<div class="scroll"><table>
+<tr><th class="num">Concurrency</th><th class="num">Requests</th><th class="num">Failed</th><th class="num">TTFT p50</th><th class="num">TTFT p95</th><th class="num">TTFT p99</th><th class="num">Duration p95</th><th class="num">Tokens/s p50</th></tr>
+<tr><td class="num">1</td><td class="num">12</td><td class="num">0</td><td class="num">11.0 ms</td><td class="num">11.0 ms</td><td class="num">11.0 ms</td><td class="num">18.0 ms</td><td class="num">1142.9</td></tr><tr><td class="num">2</td><td class="num">12</td><td class="num">2</td><td class="num">11.0 ms</td><td class="num">11.0 ms</td><td class="num">11.0 ms</td><td class="num">18.0 ms</td><td class="num">1142.9</td></tr><tr><td class="num">4</td><td class="num">12</td><td class="num">2</td><td class="num">11.0 ms</td><td class="num">11.0 ms</td><td class="num">11.0 ms</td><td class="num">18.0 ms</td><td class="num">1142.9</td></tr><tr><td class="num">8</td><td class="num">12</td><td class="num">1</td><td class="num">11.0 ms</td><td class="num">201 ms</td><td class="num">201 ms</td><td class="num">208 ms</td><td class="num">1142.9</td></tr><tr><td class="num">16</td><td class="num">12</td><td class="num">0</td><td class="num">201 ms</td><td class="num">201 ms</td><td class="num">201 ms</td><td class="num">208 ms</td><td class="num">1142.9</td></tr>
+</table></div>
+<h3>Cost</h3>
+<p>Cost: <strong>not computed</strong>. not computed: the rate sheet has no rate for self_hosted/tokvera-sim-demo</p>
+
+
+<h3>Findings</h3>
+<div class="find"><strong>Time to first token collapses under load</strong> <span class="st-fail">fail</span><span class="tag">ttft_p99_load_ratio</span><span class="tag">−35 grade points</span><span class="tag">effort 2–5 days</span>
+<p class="small">p99 201 ms at concurrency 16 against 11 ms at concurrency 1</p><p class="small muted">The tail grows much faster than the load: requests are queueing behind each other, so the slowest users see a multiple of the idle latency at the concurrency your traffic reaches.</p><p class="small"><strong>Fix:</strong> Find the saturation point in the level table and keep traffic below it: raise the server&#39;s batch and concurrent-sequence limits if memory allows, add replicas behind the endpoint, or put an admission limit in front so excess requests fail fast instead of queueing.</p></div>
+<div class="find"><strong>Requests are failing</strong> <span class="st-fail">fail</span><span class="tag">error_rate</span><span class="tag">−30 grade points</span><span class="tag">effort 0.5–3 days</span>
+<p class="small">5 of 60 requests failed (HTTP 429 ×5)</p><p class="small muted">Every failed request is either a user-visible error or a retry that costs latency and money. The status breakdown in the evidence says whether it is rate limiting, timeouts or server errors.</p><p class="small"><strong>Fix:</strong> For 429s, raise the rate limit or add client-side retry with exponential backoff and jitter. For timeouts, compare the request timeout with the measured request duration. For 5xx, read the server logs at the times of the scan.</p></div>
+<div class="find"><strong>Many prompts repeat exactly</strong> <span class="st-fail">fail</span><span class="tag">repeat_prompt_share</span><span class="tag">−10 grade points</span><span class="tag">effort 1–3 days</span>
+<p class="small">16 of 40 prompts in the demo sample repeat an earlier one exactly</p><p class="small muted">If this sample is what reaches the model, every repeat is a paid call whose answer was already computed once.</p><p class="small"><strong>Fix:</strong> Put an exact-match response cache (keyed on the normalized prompt and model parameters, with a TTL) in front of the model for the repeating routes, and measure the hit rate before considering a semantic cache.</p></div>
+<div class="find"><strong>No Prometheus metrics at /metrics</strong> <span class="st-warn">warn</span><span class="tag">metrics_endpoint</span><span class="tag">−5 grade points</span><span class="tag">effort 0.5 days</span>
+<p class="small">no Prometheus exposition answered at /metrics on the target&#39;s origin</p><p class="small muted">Queue depth, batch size and cache usage are what explain a latency problem. Without them, a slowdown can be seen but not diagnosed.</p><p class="small"><strong>Fix:</strong> Enable the server&#39;s metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there.</p></div>
+
+<p class="small muted">Tokvera contacts only the target you specify, plus GitHub when you run update or doctor --check-update, and tokvera.halotrcer.com and GitHub for the plugin&#39;s first-run install.</p><p class="small muted">The load used Tokvera&#39;s fixed, harmless benchmark prompts. Response text was read for timing and discarded; none is stored in this report.</p>
+</section>
+
+<section id="agent-security">
+<h2>Agent security</h2>
+<p class="small muted">From Sievant: the MCP server configuration of the AI clients on this machine, read without starting any server.</p>
+<div class="scroll"><table>
+<tr><th>Client</th><th>File</th><th>Scope</th><th class="num">Servers</th><th class="num">Not behind Sievant</th></tr>
+<tr><td>custom</td><td><code>testdata/scan/cursor-mcp.json</code></td><td>file</td><td class="num">4</td><td class="num">4</td></tr><tr><td>custom</td><td><code>testdata/scan/vscode-mcp.jsonc</code></td><td>file</td><td class="num">2</td><td class="num">2</td></tr>
+</table></div>
+<p class="small">Findings: 1 critical, 3 high, 1 medium, 0 low, 0 info.</p>
+<div class="find"><span class="sev sev-critical">critical</span> <strong>Hard-coded Slack token</strong><span class="tag">SEC001</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/cursor-mcp.json</code> · server <code>slack</code> · <code>env.SLACK_BOT_TOKEN</code></p>
+<p class="small">Evidence (masked): <code>xoxb… (28 chars)</code></p><p class="small muted">A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.</p><p class="small"><strong>Fix:</strong> Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Literal value in secret-named field X-API-Key</strong><span class="tag">SEC002</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/vscode-mcp.jsonc</code> · server <code>api</code> · <code>headers.X-API-Key</code></p>
+<p class="small">Evidence (masked): <code>lite… (21 chars)</code></p><p class="small muted">The field&#39;s name says it holds a credential, and its value is written in the file rather than referenced.</p><p class="small"><strong>Fix:</strong> Reference it from the environment (for example ${X_API_KEY}) and rotate it.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Credential embedded in the server URL</strong><span class="tag">SEC004</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/cursor-mcp.json</code> · server <code>cap-remote</code> · <code>url</code></p>
+<p class="small">Evidence (masked): <code>https://mcp.capability.example/apps/{masked:22}/mcp</code></p><p class="small muted">The URL itself grants access (path segment 2 (high-entropy)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.</p><p class="small"><strong>Fix:</strong> Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</p></div>
+<div class="find"><span class="sev sev-high">high</span> <strong>Credential embedded in the server URL</strong><span class="tag">SEC004</span><span class="tag deal">deal risk</span>
+<p class="small muted">custom · <code>testdata/scan/cursor-mcp.json</code> · server <code>notes</code> · <code>url</code></p>
+<p class="small">Evidence (masked): <code>https://mcp.example.com/sse{masked:16}</code></p><p class="small muted">The URL itself grants access (query api_key (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.</p><p class="small"><strong>Fix:</strong> Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</p></div>
+<div class="find"><span class="sev sev-medium">medium</span> <strong>Server runs with all permissions (Deno)</strong><span class="tag">PERM003</span>
+<p class="small muted">custom · <code>testdata/scan/cursor-mcp.json</code> · server <code>deno</code> · <code>args[1]</code></p>
+<p class="small">Evidence (masked): <code>--allow-all</code></p><p class="small muted">The server can reach far more than its tools need, which widens what a compromised or manipulated server can do.</p><p class="small"><strong>Fix:</strong> Grant only the access the server needs (for Deno, --allow-net=&lt;hosts&gt;; for containers, a dedicated network).</p></div>
+
+<p class="small muted">Tool descriptions, and the resources and prompts each server offers, were not checked: that needs starting the servers (sievant scan --inspect-tools, which runs them).</p>
+
+</section>
+
+<section id="fix-plan">
+<h2>30-day fix plan</h2>
+<p class="small muted">Ordered by the ranking above. Each fix is the tool's own advice.</p>
+<div class="week"><strong>Week 1: critical exposure and quick fixes</strong>
+<ul><li>Hard-coded Slack token <span class="tag">Sievant SEC001</span><br><span class="small muted">testdata/scan/cursor-mcp.json · slack · env.SLACK_BOT_TOKEN</span><br><span class="small">Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.</span></li><li>Literal value in secret-named field X-API-Key <span class="tag">Sievant SEC002</span><br><span class="small muted">testdata/scan/vscode-mcp.jsonc · api · headers.X-API-Key</span><br><span class="small">Reference it from the environment (for example ${X_API_KEY}) and rotate it.</span></li><li>Credential embedded in the server URL <span class="tag">Sievant SEC004</span><br><span class="small muted">testdata/scan/cursor-mcp.json · cap-remote · url</span><br><span class="small">Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</span></li><li>Credential embedded in the server URL <span class="tag">Sievant SEC004</span><br><span class="small muted">testdata/scan/cursor-mcp.json · notes · url</span><br><span class="small">Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.</span></li><li>No Prometheus metrics at /metrics <span class="tag">Tokvera metrics_endpoint</span><span class="tag">0.5 days</span><br><span class="small">Enable the server&#39;s metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there.</span></li></ul></div>
+<div class="week"><strong>Week 2: the largest cost and latency failures</strong>
+<ul><li>Time to first token collapses under load <span class="tag">Tokvera ttft_p99_load_ratio</span><span class="tag">2–5 days</span><br><span class="small">Find the saturation point in the level table and keep traffic below it: raise the server&#39;s batch and concurrent-sequence limits if memory allows, add replicas behind the endpoint, or put an admission limit in front so excess requests fail fast instead of queueing.</span></li><li>Requests are failing <span class="tag">Tokvera error_rate</span><span class="tag">0.5–3 days</span><br><span class="small">For 429s, raise the rate limit or add client-side retry with exponential backoff and jitter. For timeouts, compare the request timeout with the measured request duration. For 5xx, read the server logs at the times of the scan.</span></li></ul></div>
+<div class="week"><strong>Week 3: remaining high-severity security findings</strong>
+<p class="small muted">Nothing this week.</p></div>
+<div class="week"><strong>Week 4: everything else</strong>
+<ul><li>Many prompts repeat exactly <span class="tag">Tokvera repeat_prompt_share</span><span class="tag">1–3 days</span><br><span class="small">Put an exact-match response cache (keyed on the normalized prompt and model parameters, with a TTL) in front of the model for the repeating routes, and measure the hit rate before considering a semantic cache.</span></li><li>Server runs with all permissions (Deno) <span class="tag">Sievant PERM003</span><br><span class="small muted">testdata/scan/cursor-mcp.json · deno · args[1]</span><br><span class="small">Grant only the access the server needs (for Deno, --allow-net=&lt;hosts&gt;; for containers, a dedicated network).</span></li></ul></div>
+
+</section>
+
+<section id="method">
+<h2>How to read this report</h2>
+<p class="small">Halotrcer&#39;s ranking across the two tools is provisional (scoring version 0.1.0): its tiers are judgement, not calibrated. See docs/scoring.md.</p>
+<p class="small">Halotrcer contacts only the target you give it (through Tokvera) and reads only the MCP configuration files Sievant reads, on this machine. It sends no telemetry. Secrets stay masked as each tool masks them; on top of that, Halotrcer drops URL credentials and query strings, hides environment values, shows your home directory as ~ and replaces your user name with &lt;user&gt;.</p>
+</section>
+
+<footer>
+
+<p class="small muted">Generated by halotrcer test · schema halotrcer.check-report/v1.0.0</p>
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,337 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R 8 0 R 10 0 R 12 0 R 14 0 R] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (Halotrcer report) /Producer (halotrcer) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 6381 >>
+stream
+BT 0.36 0.4 0.44 rg /F1 8 Tf 48 28 Td (Halotrcer report \267 page 1) Tj ET
+BT 0 0 0 rg /F2 20 Tf 48 763.89 Td (Halotrcer report) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 48 748.99 Td (Target http://127.0.0.1:18089/v1 \267 2026-10-20 12:00 UTC \267 halotrcer test) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 48 736.84 Td (Tokvera v0.1.0-dev \(ok\) \267 Sievant v0.1.0-157-gd8a8bcf \(ok\)) Tj ET
+0.96 0.95 0.92 rg 48 713.76 499.28 20.83 re f
+0.64 0.15 0.16 rg 48 713.76 3 20.83 re f
+BT 0 0 0 rg /F1 9.5 Tf 58 720.16 Td (tokvera v0.1.0-dev is outside the versions this release supports \(>=0.2.0 <0.3.0\)) Tj ET
+BT 0.12 0.37 0.55 rg /F2 15 Tf 48 679.26 Td (Executive summary) Tj ET
+0.85 0.87 0.89 RG 0.6 w 48 672.51 m 547.28 672.51 l S
+BT 0 0 0 rg /F2 10.5 Tf 48 654.97 Td (Efficiency grade \(Tokvera\): A \267 Provisional scoring) Tj ET
+BT 0 0 0 rg /F1 10 Tf 48 641.34 Td (Cost per 1,000 requests: $0.0475 \(measured, rates as of 2026-10-20\)) Tj ET
+BT 0 0 0 rg /F1 10 Tf 48 627.84 Td (At your volume: $95.00 a month \(2,000,000 requests/month you gave \327 measured cost\)) Tj ET
+BT 0 0 0 rg /F2 10.5 Tf 48 613.79 Td (Agent security \(Sievant\): 4 critical, 8 high \267 deal risk: 12 finding\(s\)) Tj ET
+BT 0 0 0 rg /F2 11.5 Tf 48 592.52 Td (Top 5 findings, ranked by business impact) Tj ET
+BT 0 0 0 rg /F2 10.5 Tf 48 576.09 Td (1. Hard-coded database URL with password) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 62 563.57 Td (Sievant SEC001 \267 security \267 deal risk \267 server db \267 args[2] \267 critical security finding \(Sievant SEC001\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 62 551.42 Td (Fix: Move it to the environment or a secret store and reference it \(for example ${SERVER_TOKEN}\); then rotate it, since) Tj ET
+BT 0 0 0 rg /F1 9 Tf 62 539.27 Td (it has been on disk.) Tj ET
+BT 0 0 0 rg /F2 10.5 Tf 48 522.47 Td (2. Hard-coded GitHub token) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 62 509.94 Td (Sievant SEC001 \267 security \267 deal risk \267 server github \267 env.GITHUB_PERSONAL_ACCESS_TOKEN \267 critical security) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 62 497.79 Td (finding \(Sievant SEC001\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 62 485.64 Td (Fix: Move it to the environment or a secret store and reference it \(for example) Tj ET
+BT 0 0 0 rg /F1 9 Tf 62 473.49 Td (${GITHUB_PERSONAL_ACCESS_TOKEN}\); then rotate it, since it has been on disk.) Tj ET
+BT 0 0 0 rg /F2 10.5 Tf 48 456.69 Td (3. Hard-coded Slack token) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 62 444.17 Td (Sievant SEC001 \267 security \267 deal risk \267 server slack \267 env.SLACK_BOT_TOKEN \267 critical security finding \(Sievant SEC001\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 62 432.02 Td (Fix: Move it to the environment or a secret store and reference it \(for example ${SLACK_BOT_TOKEN}\); then rotate it,) Tj ET
+BT 0 0 0 rg /F1 9 Tf 62 419.87 Td (since it has been on disk.) Tj ET
+BT 0 0 0 rg /F2 10.5 Tf 48 403.07 Td (4. Hard-coded Anthropic API key) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 62 390.54 Td (Sievant SEC001 \267 security \267 deal risk \267 server remote \267 headers.Authorization \267 critical security finding \(Sievant SEC001\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 62 378.39 Td (Fix: Reference it from the environment and rotate it.) Tj ET
+BT 0 0 0 rg /F2 10.5 Tf 48 361.59 Td (5. Remote server over plain HTTP) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 62 349.07 Td (Sievant NET001 \267 security \267 deal risk \267 server plain \267 url \267 deal risk: a customer security review would flag Sievant NET001) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 62 336.92 Td (\(high\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 62 324.77 Td (Fix: Use {masked-url}.) Tj ET
+BT 0.12 0.37 0.55 rg /F2 15 Tf 48 289.02 Td (Cost & performance) Tj ET
+0.85 0.87 0.89 RG 0.6 w 48 282.27 m 547.28 282.27 l S
+BT 0.36 0.4 0.44 rg /F1 9 Tf 48 266.37 Td (From Tokvera: http://127.0.0.1:18089/v1 \267 model tokvera-sim-batched) Tj ET
+BT 0 0 0 rg /F2 11 Tf 48 252.02 Td (Efficiency grade: A \(97.2 / 100, scoring 0.9.0\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 239.37 Td (Provisional scoring. The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 227.22 Td (and may change before scoring 1.0.0.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 214.52 Td (Requests: 24 sent, 24 succeeded, 0 failed, in 1.4 s.) Tj ET
+BT 0 0 0 rg /F2 8.5 Tf 48 198.14 Td (Concurrency) Tj ET
+BT 0 0 0 rg /F2 8.5 Tf 118 198.14 Td (Requests) Tj ET
+BT 0 0 0 rg /F2 8.5 Tf 183 198.14 Td (Failed) Tj ET
+BT 0 0 0 rg /F2 8.5 Tf 238 198.14 Td (TTFT p50) Tj ET
+BT 0 0 0 rg /F2 8.5 Tf 308 198.14 Td (TTFT p95) Tj ET
+BT 0 0 0 rg /F2 8.5 Tf 378 198.14 Td (TTFT p99) Tj ET
+BT 0 0 0 rg /F2 8.5 Tf 448 198.14 Td (Duration p95) Tj ET
+0.85 0.87 0.89 RG 0.4 w 48 195.14 m 547.28 195.14 l S
+BT 0 0 0 rg /F1 8.5 Tf 48 185.14 Td (1) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 118 185.14 Td (8) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 183 185.14 Td (0) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 238 185.14 Td (35.8 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 308 185.14 Td (36.7 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 378 185.14 Td (36.7 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 448 185.14 Td (98.2 ms) Tj ET
+0.85 0.87 0.89 RG 0.4 w 48 182.14 m 547.28 182.14 l S
+BT 0 0 0 rg /F1 8.5 Tf 48 172.14 Td (2) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 118 172.14 Td (8) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 183 172.14 Td (0) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 238 172.14 Td (36.1 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 308 172.14 Td (36.9 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 378 172.14 Td (36.9 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 448 172.14 Td (98.2 ms) Tj ET
+0.85 0.87 0.89 RG 0.4 w 48 169.14 m 547.28 169.14 l S
+BT 0 0 0 rg /F1 8.5 Tf 48 159.14 Td (4) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 118 159.14 Td (8) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 183 159.14 Td (0) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 238 159.14 Td (36.3 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 308 159.14 Td (36.4 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 378 159.14 Td (36.4 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 448 159.14 Td (98.5 ms) Tj ET
+0.85 0.87 0.89 RG 0.4 w 48 156.14 m 547.28 156.14 l S
+BT 0 0 0 rg /F2 11.5 Tf 48 137.49 Td (Cost) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 122.17 Td ($0.0475 per 1,000 requests \(estimate\), rates as of 2026-10-20, source: halotrcer fixture \(synthetic rate, not a real) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 109.34 Td (price\)) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 96.52 Td (At the 2,000,000 requests a month you gave: $95.00 a month \(measured cost \327 your volume\). This is spend, not a) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 83.69 Td (saving.) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 6490 >>
+stream
+BT 0.36 0.4 0.44 rg /F1 8 Tf 48 28 Td (Halotrcer report \267 page 2) Tj ET
+BT 0 0 0 rg /F2 11.5 Tf 48 767.24 Td (Findings) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 751.91 Td (No Prometheus metrics at /metrics \267 warn \267 -5 grade points \267 effort 0.5 days) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 739.64 Td (no Prometheus exposition answered at /metrics on the target's origin) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 727.49 Td (Queue depth, batch size and cache usage are what explain a latency problem. Without them, a slowdown can be seen but) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 715.34 Td (not diagnosed.) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 703.19 Td (Fix: Enable the server's metrics endpoint \(llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default\) and) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 691.04 Td (scrape it. If the endpoint sits behind a gateway, expose the metrics there.) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 48 676.44 Td (Tokvera contacts only the target you specify, plus GitHub when you run update or doctor --check-update, and tokvera.halotrcer.com) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 48 664.97 Td (and GitHub for the plugin's first-run install.) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 48 653.49 Td (The load used Tokvera's fixed, harmless benchmark prompts. Response text was read for timing and discarded; none is stored in) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 48 642.01 Td (this report.) Tj ET
+BT 0.12 0.37 0.55 rg /F2 15 Tf 48 609.39 Td (Agent security) Tj ET
+0.85 0.87 0.89 RG 0.6 w 48 602.64 m 547.28 602.64 l S
+BT 0.36 0.4 0.44 rg /F1 9 Tf 48 586.74 Td (From Sievant: the MCP server configuration of the AI clients on this machine.) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 574.59 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 file \267 11 server\(s\), 10 not behind Sievant) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 562.44 Td (custom \267 testdata/scan/claude.json \267 file \267 3 server\(s\), 3 not behind Sievant) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 550.29 Td (custom \267 testdata/scan/cursor-mcp.json \267 file \267 4 server\(s\), 4 not behind Sievant) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 538.14 Td (custom \267 testdata/scan/vscode-mcp.jsonc \267 file \267 2 server\(s\), 2 not behind Sievant) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 525.99 Td (custom \267 testdata/scan/windsurf-mcp_config.json \267 file \267 1 server\(s\), 1 not behind Sievant) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 513.29 Td (Findings: 4 critical, 8 high, 7 medium, 0 low, 1 info.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 496.47 Td (Critical: Hard-coded database URL with password \(SEC001\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 484.74 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server db \267 args[2]) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 472.72 Td (Evidence \(masked\): post\205 \(29 chars\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 460.57 Td (Fix: Move it to the environment or a secret store and reference it \(for example ${SERVER_TOKEN}\); then rotate it, since it) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 448.42 Td (has been on disk.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 432.72 Td (Critical: Hard-coded GitHub token \(SEC001\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 420.99 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server github \267 env.GITHUB_PERSONAL_ACCESS_TOKEN) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 408.97 Td (Evidence \(masked\): ghp_\205 \(40 chars\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 396.82 Td (Fix: Move it to the environment or a secret store and reference it \(for example) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 384.67 Td (${GITHUB_PERSONAL_ACCESS_TOKEN}\); then rotate it, since it has been on disk.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 368.97 Td (Critical: Hard-coded Slack token \(SEC001\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 357.24 Td (custom \267 testdata/scan/cursor-mcp.json \267 server slack \267 env.SLACK_BOT_TOKEN) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 345.22 Td (Evidence \(masked\): xoxb\205 \(28 chars\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 333.07 Td (Fix: Move it to the environment or a secret store and reference it \(for example ${SLACK_BOT_TOKEN}\); then rotate it,) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 320.92 Td (since it has been on disk.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 305.22 Td (Critical: Hard-coded Anthropic API key \(SEC001\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 293.49 Td (custom \267 testdata/scan/windsurf-mcp_config.json \267 server remote \267 headers.Authorization) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 281.47 Td (Evidence \(masked\): sk-a\205 \(53 chars\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 269.32 Td (Fix: Reference it from the environment and rotate it.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 253.62 Td (High: Remote server over plain HTTP \(NET001\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 241.89 Td (custom \267 testdata/scan/claude.json \267 server plain \267 url) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 229.87 Td (Evidence \(masked\): http://mcp.internal.example:8080) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 217.72 Td (Fix: Use {masked-url}.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 202.02 Td (High: Access to the whole filesystem \(PERM001\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 190.29 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server files \267 args[2]) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 178.27 Td (Evidence \(masked\): /) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 166.12 Td (Fix: Give the server only the directories it needs, for example the project directory.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 150.42 Td (High: Literal value in secret-named field X-API-Key \(SEC002\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 138.69 Td (custom \267 testdata/scan/vscode-mcp.jsonc \267 server api \267 headers.X-API-Key) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 126.67 Td (Evidence \(masked\): lite\205 \(21 chars\)) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 114.52 Td (Fix: Reference it from the environment \(for example ${X_API_KEY}\) and rotate it.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 98.82 Td (High: Credential embedded in the server URL \(SEC004\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 87.09 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server remote-bridge \267 args[2]) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 75.07 Td (Evidence \(masked\): https://mcp.capability.example/tenant/server/{masked:36}/mcp?user_id={masked:8}) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 62.92 Td (Fix: Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 6124 >>
+stream
+BT 0.36 0.4 0.44 rg /F1 8 Tf 48 28 Td (Halotrcer report \267 page 3) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 775.99 Td (authenticates with a header referenced from the environment.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 760.29 Td (High: Credential embedded in the server URL \(SEC004\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 748.56 Td (custom \267 testdata/scan/cursor-mcp.json \267 server cap-remote \267 url) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 736.54 Td (Evidence \(masked\): https://mcp.capability.example/apps/{masked:22}/mcp) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 724.39 Td (Fix: Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 712.24 Td (authenticates with a header referenced from the environment.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 696.54 Td (High: Credential embedded in the server URL \(SEC004\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 684.81 Td (custom \267 testdata/scan/cursor-mcp.json \267 server notes \267 url) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 672.79 Td (Evidence \(masked\): https://mcp.example.com/sse{masked:16}) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 660.64 Td (Fix: Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 648.49 Td (authenticates with a header referenced from the environment.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 632.79 Td (High: Server fetched from a repository or URL at start \(SUP002\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 621.06 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server git-source \267 args) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 609.04 Td (Evidence \(masked\): github:example/mcp-server) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 596.89 Td (Fix: Use a published release pinned to an exact version \(or a commit hash\).) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 581.19 Td (High: Server launched by a script downloaded at start \(SUP002\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 569.46 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server installer \267 args) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 557.44 Td (Evidence \(masked\): -c curl -fsSL https://example.com/install.sh | sh) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 545.29 Td (Fix: Install a pinned release and run it directly.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 529.59 Td (Medium: Remote server with no credential configured \(AUTH001\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 517.86 Td (custom \267 testdata/scan/claude.json \267 server remote-noauth \267 url) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 505.84 Td (Evidence \(masked\): https://mcp.example.com) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 493.69 Td (Fix: Confirm the server requires authentication \(OAuth or a header referenced from the environment\).) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 477.99 Td (Medium: Access to the whole home directory \(PERM002\) \267 deal risk) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 466.26 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server home \267 args[2]) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 454.24 Td (Evidence \(masked\): ~) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 442.09 Td (Fix: Give the server only the directories it needs.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 426.39 Td (Medium: Server runs with the host network \(container\) \(PERM003\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 414.66 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server docker \267 args[3]) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 402.64 Td (Evidence \(masked\): --network) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 390.49 Td (Fix: Grant only the access the server needs \(for Deno, --allow-net=<hosts>; for containers, a dedicated network\).) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 374.79 Td (Medium: Server runs with all permissions \(Deno\) \(PERM003\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 363.06 Td (custom \267 testdata/scan/cursor-mcp.json \267 server deno \267 args[1]) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 351.04 Td (Evidence \(masked\): --allow-all) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 338.89 Td (Fix: Grant only the access the server needs \(for Deno, --allow-net=<hosts>; for containers, a dedicated network\).) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 323.19 Td (Medium: Unpinned server version \(SUP001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 311.47 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server docker \267 args) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 299.44 Td (Evidence \(masked\): example/mcp-server) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 287.29 Td (Fix: Pin the image by digest \(image@sha256:\205\) or at least an exact version tag.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 271.59 Td (Medium: Unpinned server version \(SUP001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 259.87 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server github \267 args) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 247.84 Td (Evidence \(masked\): @example/github-mcp) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 235.69 Td (Fix: Pin an exact version, for example example/github-mcp@1.2.3 \(with its scope\), and update it deliberately.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 219.99 Td (Medium: Server pinned to a moving tag \(latest\) \(SUP001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 208.27 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server latest \267 args) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 196.24 Td (Evidence \(masked\): example-mcp@latest) Tj ET
+BT 0 0 0 rg /F1 9 Tf 60 184.09 Td (Fix: Pin an exact version \(name==1.2.3\) and update it deliberately.) Tj ET
+BT 0 0 0 rg /F2 9.5 Tf 48 168.39 Td (Info: Launched through Sievant \(SVT001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 60 156.67 Td (claude-desktop \267 testdata/scan/claude_desktop_config.json \267 server wrapped) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 48 142.19 Td (Tool descriptions, and the resources and prompts each server offers, were not checked: that needs starting the servers \(sievant) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8.5 Tf 48 130.72 Td (scan --inspect-tools, which runs them\).) Tj ET
+BT 0.12 0.37 0.55 rg /F2 15 Tf 48 98.09 Td (30-day fix plan) Tj ET
+0.85 0.87 0.89 RG 0.6 w 48 91.34 m 547.28 91.34 l S
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 6135 >>
+stream
+BT 0.36 0.4 0.44 rg /F1 8 Tf 48 28 Td (Halotrcer report \267 page 4) Tj ET
+BT 0 0 0 rg /F2 11.5 Tf 48 767.24 Td (Week 1: critical exposure and quick fixes) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 751.91 Td (\225 Hard-coded database URL with password \(Sievant SEC001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 739.64 Td (Move it to the environment or a secret store and reference it \(for example ${SERVER_TOKEN}\); then rotate it, since it has) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 727.49 Td (been on disk.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 714.79 Td (\225 Hard-coded GitHub token \(Sievant SEC001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 702.51 Td (Move it to the environment or a secret store and reference it \(for example ${GITHUB_PERSONAL_ACCESS_TOKEN}\);) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 690.37 Td (then rotate it, since it has been on disk.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 677.66 Td (\225 Hard-coded Slack token \(Sievant SEC001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 665.39 Td (Move it to the environment or a secret store and reference it \(for example ${SLACK_BOT_TOKEN}\); then rotate it, since it) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 653.24 Td (has been on disk.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 640.54 Td (\225 Hard-coded Anthropic API key \(Sievant SEC001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 628.26 Td (Reference it from the environment and rotate it.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 615.56 Td (\225 Remote server over plain HTTP \(Sievant NET001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 603.29 Td (Use {masked-url}.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 590.59 Td (\225 Access to the whole filesystem \(Sievant PERM001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 578.31 Td (Give the server only the directories it needs, for example the project directory.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 565.61 Td (\225 Literal value in secret-named field X-API-Key \(Sievant SEC002\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 553.34 Td (Reference it from the environment \(for example ${X_API_KEY}\) and rotate it.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 540.64 Td (\225 Credential embedded in the server URL \(Sievant SEC004\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 528.36 Td (Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 516.21 Td (with a header referenced from the environment.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 503.51 Td (\225 Credential embedded in the server URL \(Sievant SEC004\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 491.24 Td (Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 479.09 Td (with a header referenced from the environment.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 466.39 Td (\225 Credential embedded in the server URL \(Sievant SEC004\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 454.12 Td (Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 441.97 Td (with a header referenced from the environment.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 429.27 Td (\225 No Prometheus metrics at /metrics \(Tokvera metrics_endpoint\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 416.99 Td (Enable the server's metrics endpoint \(llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default\) and scrape it.) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 404.84 Td (If the endpoint sits behind a gateway, expose the metrics there.) Tj ET
+BT 0 0 0 rg /F2 11.5 Tf 48 383.94 Td (Week 2: the largest cost and latency failures) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 48 369.17 Td (Nothing this week.) Tj ET
+BT 0 0 0 rg /F2 11.5 Tf 48 348.27 Td (Week 3: remaining high-severity security findings) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 332.94 Td (\225 Server fetched from a repository or URL at start \(Sievant SUP002\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 320.67 Td (Use a published release pinned to an exact version \(or a commit hash\).) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 307.97 Td (\225 Server launched by a script downloaded at start \(Sievant SUP002\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 295.69 Td (Install a pinned release and run it directly.) Tj ET
+BT 0 0 0 rg /F2 11.5 Tf 48 274.79 Td (Week 4: everything else) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 259.47 Td (\225 Remote server with no credential configured \(Sievant AUTH001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 247.19 Td (Confirm the server requires authentication \(OAuth or a header referenced from the environment\).) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 234.49 Td (\225 Access to the whole home directory \(Sievant PERM002\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 222.22 Td (Give the server only the directories it needs.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 209.52 Td (\225 Server runs with the host network \(container\) \(Sievant PERM003\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 197.24 Td (Grant only the access the server needs \(for Deno, --allow-net=<hosts>; for containers, a dedicated network\).) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 184.54 Td (\225 Server runs with all permissions \(Deno\) \(Sievant PERM003\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 172.27 Td (Grant only the access the server needs \(for Deno, --allow-net=<hosts>; for containers, a dedicated network\).) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 159.57 Td (\225 Unpinned server version \(Sievant SUP001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 147.29 Td (Pin the image by digest \(image@sha256:\205\) or at least an exact version tag.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 134.59 Td (\225 Unpinned server version \(Sievant SUP001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 122.32 Td (Pin an exact version, for example example/github-mcp@1.2.3 \(with its scope\), and update it deliberately.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 109.62 Td (\225 Server pinned to a moving tag \(latest\) \(Sievant SUP001\)) Tj ET
+BT 0.36 0.4 0.44 rg /F1 9 Tf 60 97.34 Td (Pin an exact version \(name==1.2.3\) and update it deliberately.) Tj ET
+BT 0 0 0 rg /F1 9.5 Tf 48 84.64 Td (\225 Launched through Sievant \(Sievant SVT001\)) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 15 0 R /Annots [16 0 R] >>
+endobj
+15 0 obj
+<< /Length 1245 >>
+stream
+BT 0.36 0.4 0.44 rg /F1 8 Tf 48 28 Td (Halotrcer report \267 page 5) Tj ET
+BT 0.12 0.37 0.55 rg /F2 15 Tf 48 755.39 Td (How to read this report) Tj ET
+0.85 0.87 0.89 RG 0.6 w 48 748.64 m 547.28 748.64 l S
+BT 0 0 0 rg /F1 9 Tf 48 732.74 Td (Halotrcer's ranking across the two tools is provisional \(scoring version 0.1.0\): its tiers are judgement, not calibrated. See) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 720.59 Td (docs/scoring.md.) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 704.44 Td (Halotrcer contacts only the target you give it \(through Tokvera\) and reads only the MCP configuration files Sievant reads, on) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 692.29 Td (this machine. It sends no telemetry. Secrets stay masked as each tool masks them; on top of that, Halotrcer drops URL) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 680.14 Td (credentials and query strings, hides environment values, shows your home directory as ~ and replaces your user name with) Tj ET
+BT 0 0 0 rg /F1 9 Tf 48 667.99 Td (<user>.) Tj ET
+BT 0.12 0.37 0.55 rg /F2 10.5 Tf 48 640.19 Td (Want a second pair of eyes? Book the AI Cost & Security Audit: https://www.halotrcer.com/book) Tj ET
+BT 0.36 0.4 0.44 rg /F1 8 Tf 48 618.77 Td (Generated by halotrcer test \267 schema halotrcer.check-report/v1.0.0) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Type /Annot /Subtype /Link /Rect [48 635.57 528.18 649.57] /Border [0 0 0] /A << /S /URI /URI (https://www.halotrcer.com/book) >> >>
+endobj
+xref
+0 17
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000148 00000 n 
+0000000245 00000 n 
+0000000347 00000 n 
+0000000416 00000 n 
+0000000558 00000 n 
+0000006990 00000 n 
+0000007132 00000 n 
+0000013673 00000 n 
+0000013817 00000 n 
+0000019993 00000 n 
+0000020137 00000 n 
+0000026324 00000 n 
+0000026485 00000 n 
+0000027782 00000 n 
+trailer
+<< /Size 17 /Root 1 0 R /Info 5 0 R >>
+startxref
+27935
+%%EOF

@@ -1,0 +1,103 @@
+# CI: every gate in CLAUDE.md on every push and pull request (`make` targets,
+# the same ones `make gates` runs locally). Every action pinned to a commit
+# SHA (read from each action's releases); Go from go.mod's toolchain line;
+# tools downloaded at pinned versions and verified against pinned checksums.
+#
+# Permissions: contents: read for the whole workflow; no job needs more.
+# Every checkout sets persist-credentials: false.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOTOOLCHAIN: local
+  GOLANGCI_LINT_VERSION: 2.14.0
+  # golangci-lint-2.14.0-linux-amd64.tar.gz, from
+  # https://github.com/golangci/golangci-lint/releases/download/v2.14.0/golangci-lint-2.14.0-checksums.txt
+  GOLANGCI_LINT_SHA256: ab90aeb7b066f92a33415b638a50fe5344bbb75a0d32ad30cc248d88f81032ab
+  GITLEAKS_VERSION: 8.30.1
+  # gitleaks_8.30.1_linux_x64.tar.gz, from
+  # https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  ACTIONLINT_VERSION: 1.7.12
+  # actionlint_1.7.12_linux_amd64.tar.gz, from
+  # https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_checksums.txt
+  ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0          # gitleaks scans the whole history
+          persist-credentials: false
+
+      - name: Go version from go.mod's toolchain line
+        id: go
+        run: |
+          v=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2 }' go.mod)
+          test -n "$v" || { echo "go.mod has no toolchain line"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache: false
+
+      - name: Install golangci-lint, gitleaks and actionlint (pinned, checksum-verified)
+        run: |
+          set -eu
+          dir="$RUNNER_TEMP/tools"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f="golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/$f"
+          echo "${GOLANGCI_LINT_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" --strip-components=1 "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint"
+          f="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$f"
+          echo "${GITLEAKS_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" gitleaks
+          f="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$f"
+          echo "${ACTIONLINT_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" actionlint
+          echo "$dir" >> "$GITHUB_PATH"
+
+      - name: Install PDF checkers
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq qpdf poppler-utils
+
+      - name: Tool versions
+        run: |
+          go version
+          golangci-lint version
+          gitleaks version
+          actionlint -version
+          qpdf --version | head -1
+
+      - name: go mod tidy is a no-op
+        run: go mod tidy && test -z "$(git status --porcelain -- go.mod go.sum)"
+
+      - name: vet (gofmt first)
+        run: make vet
+      - name: race tests
+        run: make test
+      - name: golangci-lint
+        run: make lint
+      - name: govulncheck (stock toolchain)
+        run: make vuln
+      - name: gitleaks
+        run: make secrets
+      - name: actionlint
+        run: make actionlint ACTIONLINT=actionlint
+      - name: shellcheck (v0.9.0 and v0.11.0 images)
+        run: make shellcheck

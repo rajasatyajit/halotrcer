@@ -1,0 +1,9 @@
+Scan plan for http://127.0.0.1:38409
+  model:        tokvera-sim-demo
+  protocol:     openai_compatible at http://127.0.0.1:38409/v1
+  load:         suite demo, levels 1,2,4,8,16, up to 12 requests per level, 60 in all
+  per request:  one of Tokvera's fixed benchmark prompts, at most 256 completion tokens
+  token budget: 16,680 tokens (hard cap)
+  worst case:   cost not computed: the rate sheet has no rate for self_hosted/tokvera-sim-demo
+  also read:    the model list and identity endpoints (already read), /metrics during the load
+{"time":"2026-10-20T19:56:31.069800308+05:30","level":"INFO","msg":"scan result","grade":"D","requests":60,"succeeded":55,"findings":4,"report":"demo/report.html","data":"demo/report.json"}

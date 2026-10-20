@@ -1,0 +1,17 @@
+# Synthetic rate sheet for Halotrcer's test fixtures: invented rates for the
+# Tokvera simulator's models, not any provider's prices. It stands in for a
+# user-supplied --pricing file.
+as_of: "2026-10-20"
+models:
+  - provider: self_hosted
+    model: tokvera-sim-batched
+    input_per_mtok: 1.00
+    output_per_mtok: 2.00
+    cached_input_per_mtok: 0.50
+    source: "halotrcer fixture (synthetic rate, not a real price)"
+  - provider: self_hosted
+    model: tokvera-sim-flaky
+    input_per_mtok: 1.00
+    output_per_mtok: 2.00
+    cached_input_per_mtok: 0.50
+    source: "halotrcer fixture (synthetic rate, not a real price)"

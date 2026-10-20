@@ -1,0 +1,502 @@
+{
+  "schema_version": "halotrcer.check-report/v1.0.0",
+  "generator": "halotrcer test",
+  "generated_at": "2026-10-20T12:00:00Z",
+  "target": "http://127.0.0.1:18089/v1",
+  "tools": [
+    {
+      "name": "tokvera",
+      "version": "v0.1.0-dev",
+      "status": "ok",
+      "compat_warning": "tokvera v0.1.0-dev is outside the versions this release supports (>=0.2.0 <0.3.0)"
+    },
+    {
+      "name": "sievant",
+      "version": "v0.1.0-157-gd8a8bcf",
+      "status": "ok"
+    }
+  ],
+  "summary": {
+    "top": [
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded Slack token",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "xoxb… (28 chars)",
+        "fix": "Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.",
+        "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "slack",
+        "where": "env.SLACK_BOT_TOKEN"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC002",
+        "title": "Literal value in secret-named field X-API-Key",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC002 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "lite… (21 chars)",
+        "fix": "Reference it from the environment (for example ${X_API_KEY}) and rotate it.",
+        "detail": "The field's name says it holds a credential, and its value is written in the file rather than referenced.",
+        "client": "custom",
+        "file": "testdata/scan/vscode-mcp.jsonc",
+        "server": "api",
+        "where": "headers.X-API-Key"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC004",
+        "title": "Credential embedded in the server URL",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC004 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "https://mcp.capability.example/apps/{masked:22}/mcp",
+        "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+        "detail": "The URL itself grants access (path segment 2 (high-entropy)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "cap-remote",
+        "where": "url"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC004",
+        "title": "Credential embedded in the server URL",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC004 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "https://mcp.example.com/sse{masked:16}",
+        "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+        "detail": "The URL itself grants access (query api_key (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "notes",
+        "where": "url"
+      },
+      {
+        "source": "tokvera",
+        "ref": "ttft_p99_load_ratio",
+        "title": "Time to first token collapses under load",
+        "dimension": "latency",
+        "tier": 2,
+        "weight": 1,
+        "deal_risk": false,
+        "why": "Tokvera fail on latency, impact 35 grade points (at or above the median 20)",
+        "week": 2,
+        "status": "fail",
+        "impact": 35,
+        "rank": 1,
+        "effort": "2–5 days",
+        "evidence": "p99 201 ms at concurrency 16 against 11 ms at concurrency 1",
+        "why_it_matters": "The tail grows much faster than the load: requests are queueing behind each other, so the slowest users see a multiple of the idle latency at the concurrency your traffic reaches.",
+        "fix": "Find the saturation point in the level table and keep traffic below it: raise the server's batch and concurrent-sequence limits if memory allows, add replicas behind the endpoint, or put an admission limit in front so excess requests fail fast instead of queueing."
+      }
+    ],
+    "grade": "D",
+    "grade_provisional": true,
+    "security_counts": {
+      "critical": 1,
+      "high": 3,
+      "info": 0,
+      "low": 0,
+      "medium": 1
+    },
+    "deal_risk": 4,
+    "reliability_concern": "Tokvera graded this endpoint D"
+  },
+  "cost_performance": {
+    "target": "http://127.0.0.1:38409/v1",
+    "model": "tokvera-sim-demo",
+    "simulated": true,
+    "simulated_timing": true,
+    "grade": "D",
+    "points": 60.8,
+    "scoring_version": "0.9.0",
+    "provisional": true,
+    "provisional_note": "The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0.",
+    "caps": [
+      "capped at D: more than 5% of requests failed",
+      "capped at C: time to first token collapses under load"
+    ],
+    "requests": 60,
+    "succeeded": 55,
+    "failed": 5,
+    "duration_ms": 776,
+    "levels": [
+      {
+        "concurrency": 1,
+        "requests": 12,
+        "failed": 0,
+        "ttft_p50_ms": 11,
+        "ttft_p95_ms": 11,
+        "ttft_p99_ms": 11,
+        "request_duration_p95_ms": 18,
+        "output_tokens_per_s_p50": 1142.857142857143
+      },
+      {
+        "concurrency": 2,
+        "requests": 12,
+        "failed": 2,
+        "ttft_p50_ms": 11,
+        "ttft_p95_ms": 11,
+        "ttft_p99_ms": 11,
+        "request_duration_p95_ms": 18,
+        "output_tokens_per_s_p50": 1142.857142857143
+      },
+      {
+        "concurrency": 4,
+        "requests": 12,
+        "failed": 2,
+        "ttft_p50_ms": 11,
+        "ttft_p95_ms": 11,
+        "ttft_p99_ms": 11,
+        "request_duration_p95_ms": 18,
+        "output_tokens_per_s_p50": 1142.857142857143
+      },
+      {
+        "concurrency": 8,
+        "requests": 12,
+        "failed": 1,
+        "ttft_p50_ms": 11,
+        "ttft_p95_ms": 201,
+        "ttft_p99_ms": 201,
+        "request_duration_p95_ms": 208,
+        "output_tokens_per_s_p50": 1142.857142857143
+      },
+      {
+        "concurrency": 16,
+        "requests": 12,
+        "failed": 0,
+        "ttft_p50_ms": 201,
+        "ttft_p95_ms": 201,
+        "ttft_p99_ms": 201,
+        "request_duration_p95_ms": 208,
+        "output_tokens_per_s_p50": 1142.857142857143
+      }
+    ],
+    "cost": {
+      "not_computed": "not computed: the rate sheet has no rate for self_hosted/tokvera-sim-demo",
+      "estimate": false,
+      "pricing_sheet": "none (simulated model)"
+    },
+    "findings": [
+      {
+        "source": "tokvera",
+        "ref": "ttft_p99_load_ratio",
+        "title": "Time to first token collapses under load",
+        "dimension": "latency",
+        "tier": 2,
+        "weight": 1,
+        "deal_risk": false,
+        "why": "Tokvera fail on latency, impact 35 grade points (at or above the median 20)",
+        "week": 2,
+        "status": "fail",
+        "impact": 35,
+        "rank": 1,
+        "effort": "2–5 days",
+        "evidence": "p99 201 ms at concurrency 16 against 11 ms at concurrency 1",
+        "why_it_matters": "The tail grows much faster than the load: requests are queueing behind each other, so the slowest users see a multiple of the idle latency at the concurrency your traffic reaches.",
+        "fix": "Find the saturation point in the level table and keep traffic below it: raise the server's batch and concurrent-sequence limits if memory allows, add replicas behind the endpoint, or put an admission limit in front so excess requests fail fast instead of queueing."
+      },
+      {
+        "source": "tokvera",
+        "ref": "error_rate",
+        "title": "Requests are failing",
+        "dimension": "latency",
+        "tier": 2,
+        "weight": 0.8571428571428571,
+        "deal_risk": false,
+        "why": "Tokvera fail on latency, impact 30 grade points (at or above the median 20)",
+        "week": 2,
+        "status": "fail",
+        "impact": 30,
+        "rank": 2,
+        "effort": "0.5–3 days",
+        "evidence": "5 of 60 requests failed (HTTP 429 ×5)",
+        "why_it_matters": "Every failed request is either a user-visible error or a retry that costs latency and money. The status breakdown in the evidence says whether it is rate limiting, timeouts or server errors.",
+        "fix": "For 429s, raise the rate limit or add client-side retry with exponential backoff and jitter. For timeouts, compare the request timeout with the measured request duration. For 5xx, read the server logs at the times of the scan."
+      },
+      {
+        "source": "tokvera",
+        "ref": "repeat_prompt_share",
+        "title": "Many prompts repeat exactly",
+        "dimension": "cost",
+        "tier": 4,
+        "weight": 0.2857142857142857,
+        "deal_risk": false,
+        "why": "Tokvera fail on cost, impact 10 grade points",
+        "week": 4,
+        "status": "fail",
+        "impact": 10,
+        "rank": 3,
+        "effort": "1–3 days",
+        "evidence": "16 of 40 prompts in the demo sample repeat an earlier one exactly",
+        "why_it_matters": "If this sample is what reaches the model, every repeat is a paid call whose answer was already computed once.",
+        "fix": "Put an exact-match response cache (keyed on the normalized prompt and model parameters, with a TTL) in front of the model for the repeating routes, and measure the hit rate before considering a semantic cache."
+      },
+      {
+        "source": "tokvera",
+        "ref": "metrics_endpoint",
+        "title": "No Prometheus metrics at /metrics",
+        "dimension": "operational",
+        "tier": 5,
+        "weight": 0.07142857142857142,
+        "deal_risk": false,
+        "why": "Tokvera warning on operational, impact 5 grade points",
+        "week": 1,
+        "status": "warn",
+        "impact": 5,
+        "rank": 4,
+        "effort": "0.5 days",
+        "evidence": "no Prometheus exposition answered at /metrics on the target's origin",
+        "why_it_matters": "Queue depth, batch size and cache usage are what explain a latency problem. Without them, a slowdown can be seen but not diagnosed.",
+        "fix": "Enable the server's metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there."
+      }
+    ],
+    "privacy": [
+      "Tokvera contacts only the target you specify, plus GitHub when you run update or doctor --check-update, and tokvera.halotrcer.com and GitHub for the plugin's first-run install.",
+      "The load used Tokvera's fixed, harmless benchmark prompts. Response text was read for timing and discarded; none is stored in this report."
+    ]
+  },
+  "agent_security": {
+    "files": [
+      {
+        "client": "custom",
+        "path": "testdata/scan/cursor-mcp.json",
+        "scope": "file",
+        "servers": 4,
+        "unwrapped": 4
+      },
+      {
+        "client": "custom",
+        "path": "testdata/scan/vscode-mcp.jsonc",
+        "scope": "file",
+        "servers": 2,
+        "unwrapped": 2
+      }
+    ],
+    "counts": {
+      "critical": 1,
+      "high": 3,
+      "info": 0,
+      "low": 0,
+      "medium": 1
+    },
+    "tools_inspected": false,
+    "findings": [
+      {
+        "source": "sievant",
+        "ref": "SEC001",
+        "title": "Hard-coded Slack token",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 1,
+        "deal_risk": true,
+        "why": "critical security finding (Sievant SEC001)",
+        "week": 1,
+        "severity": "critical",
+        "evidence": "xoxb… (28 chars)",
+        "fix": "Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.",
+        "detail": "A credential is written in the configuration file, readable by anything that can read the file and copied into backups and dotfile repositories.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "slack",
+        "where": "env.SLACK_BOT_TOKEN"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC002",
+        "title": "Literal value in secret-named field X-API-Key",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC002 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "lite… (21 chars)",
+        "fix": "Reference it from the environment (for example ${X_API_KEY}) and rotate it.",
+        "detail": "The field's name says it holds a credential, and its value is written in the file rather than referenced.",
+        "client": "custom",
+        "file": "testdata/scan/vscode-mcp.jsonc",
+        "server": "api",
+        "where": "headers.X-API-Key"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC004",
+        "title": "Credential embedded in the server URL",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC004 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "https://mcp.capability.example/apps/{masked:22}/mcp",
+        "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+        "detail": "The URL itself grants access (path segment 2 (high-entropy)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "cap-remote",
+        "where": "url"
+      },
+      {
+        "source": "sievant",
+        "ref": "SEC004",
+        "title": "Credential embedded in the server URL",
+        "dimension": "security",
+        "tier": 1,
+        "weight": 0.75,
+        "deal_risk": true,
+        "why": "deal risk: a customer security review would flag Sievant SEC004 (high)",
+        "week": 1,
+        "severity": "high",
+        "evidence": "https://mcp.example.com/sse{masked:16}",
+        "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+        "detail": "The URL itself grants access (query api_key (token query key)). Anyone who sees it can use the server: it is copied into logs, process lists, shell history, screenshots and support tickets.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "notes",
+        "where": "url"
+      },
+      {
+        "source": "sievant",
+        "ref": "PERM003",
+        "title": "Server runs with all permissions (Deno)",
+        "dimension": "security",
+        "tier": 5,
+        "weight": 0.5,
+        "deal_risk": false,
+        "why": "medium security finding (Sievant PERM003)",
+        "week": 4,
+        "severity": "medium",
+        "evidence": "--allow-all",
+        "fix": "Grant only the access the server needs (for Deno, --allow-net=<hosts>; for containers, a dedicated network).",
+        "detail": "The server can reach far more than its tools need, which widens what a compromised or manipulated server can do.",
+        "client": "custom",
+        "file": "testdata/scan/cursor-mcp.json",
+        "server": "deno",
+        "where": "args[1]"
+      }
+    ],
+    "notes": [
+      "Tool descriptions, and the resources and prompts each server offers, were not checked: that needs starting the servers (sievant scan --inspect-tools, which runs them)."
+    ]
+  },
+  "fix_plan": [
+    {
+      "week": 1,
+      "title": "Week 1: critical exposure and quick fixes",
+      "items": [
+        {
+          "source": "sievant",
+          "ref": "SEC001",
+          "title": "Hard-coded Slack token",
+          "fix": "Move it to the environment or a secret store and reference it (for example ${SLACK_BOT_TOKEN}); then rotate it, since it has been on disk.",
+          "where": "testdata/scan/cursor-mcp.json · slack · env.SLACK_BOT_TOKEN"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC002",
+          "title": "Literal value in secret-named field X-API-Key",
+          "fix": "Reference it from the environment (for example ${X_API_KEY}) and rotate it.",
+          "where": "testdata/scan/vscode-mcp.jsonc · api · headers.X-API-Key"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC004",
+          "title": "Credential embedded in the server URL",
+          "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+          "where": "testdata/scan/cursor-mcp.json · cap-remote · url"
+        },
+        {
+          "source": "sievant",
+          "ref": "SEC004",
+          "title": "Credential embedded in the server URL",
+          "fix": "Rotate the URL with the provider if it has been shared, keep the file private, and prefer a provider option that authenticates with a header referenced from the environment.",
+          "where": "testdata/scan/cursor-mcp.json · notes · url"
+        },
+        {
+          "source": "tokvera",
+          "ref": "metrics_endpoint",
+          "title": "No Prometheus metrics at /metrics",
+          "fix": "Enable the server's metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there.",
+          "effort": "0.5 days"
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "title": "Week 2: the largest cost and latency failures",
+      "items": [
+        {
+          "source": "tokvera",
+          "ref": "ttft_p99_load_ratio",
+          "title": "Time to first token collapses under load",
+          "fix": "Find the saturation point in the level table and keep traffic below it: raise the server's batch and concurrent-sequence limits if memory allows, add replicas behind the endpoint, or put an admission limit in front so excess requests fail fast instead of queueing.",
+          "effort": "2–5 days"
+        },
+        {
+          "source": "tokvera",
+          "ref": "error_rate",
+          "title": "Requests are failing",
+          "fix": "For 429s, raise the rate limit or add client-side retry with exponential backoff and jitter. For timeouts, compare the request timeout with the measured request duration. For 5xx, read the server logs at the times of the scan.",
+          "effort": "0.5–3 days"
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "title": "Week 3: remaining high-severity security findings",
+      "items": []
+    },
+    {
+      "week": 4,
+      "title": "Week 4: everything else",
+      "items": [
+        {
+          "source": "tokvera",
+          "ref": "repeat_prompt_share",
+          "title": "Many prompts repeat exactly",
+          "fix": "Put an exact-match response cache (keyed on the normalized prompt and model parameters, with a TTL) in front of the model for the repeating routes, and measure the hit rate before considering a semantic cache.",
+          "effort": "1–3 days"
+        },
+        {
+          "source": "sievant",
+          "ref": "PERM003",
+          "title": "Server runs with all permissions (Deno)",
+          "fix": "Grant only the access the server needs (for Deno, --allow-net=<hosts>; for containers, a dedicated network).",
+          "where": "testdata/scan/cursor-mcp.json · deno · args[1]"
+        }
+      ]
+    }
+  ],
+  "ranking": {
+    "scoring_version": "0.1.0",
+    "provisional": true,
+    "note": "Halotrcer's ranking across the two tools is provisional (scoring version 0.1.0): its tiers are judgement, not calibrated. See docs/scoring.md."
+  },
+  "privacy": "Halotrcer contacts only the target you give it (through Tokvera) and reads only the MCP configuration files Sievant reads, on this machine. It sends no telemetry. Secrets stay masked as each tool masks them; on top of that, Halotrcer drops URL credentials and query strings, hides environment values, shows your home directory as ~ and replaces your user name with <user>."
+}

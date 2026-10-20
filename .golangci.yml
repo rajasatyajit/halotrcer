@@ -1,0 +1,45 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard   # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - bodyclose
+    - contextcheck
+    - errorlint
+    - forbidigo
+    - gocritic
+    - gosec
+    - misspell
+    - noctx
+    - nolintlint
+    - unconvert
+    - usestdlibvars
+  settings:
+    forbidigo:
+      forbid:
+        # Commands write to the io.Writer they are given, so every output
+        # can be tested and redacted; only main wires os.Stdout/os.Stderr.
+        - pattern: ^fmt\.Print(f|ln)?$
+          msg: write to the command's io.Writer
+        - pattern: ^(print|println)$
+          msg: write to the command's io.Writer
+        - pattern: ^log\.(Print|Printf|Println|Fatal|Fatalf|Fatalln|Panic|Panicf|Panicln)$
+          msg: return an error; main reports it
+    gosec:
+      excludes:
+        - G304 # reports and fixtures are read from user-supplied paths by design
+        - G204 # running tokvera and sievant as subprocesses is the product
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters: [gosec]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

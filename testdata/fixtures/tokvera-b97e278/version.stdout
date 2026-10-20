@@ -1,0 +1,5 @@
+tokvera v0.1.0-dev (commit b97e278)
+findings schema: tokvera.findings/v1.6.0
+analyst schema:  tokvera.analyst/v1.1.0
+commit date:     unknown
+go:              go1.27.2

@@ -1,0 +1,36 @@
+{
+  "report_version": 1,
+  "generator": "sievant v0.1.0-157-gd8a8bcf",
+  "generated_at": "2026-10-20T14:27:31Z",
+  "tools_inspected": false,
+  "files": [
+    {
+      "client": "custom",
+      "path": "testdata/scan/broken.json",
+      "scope": "file",
+      "error": "not a JSON object: unexpected end of JSON input",
+      "servers": []
+    }
+  ],
+  "findings": [
+    {
+      "rule": "CFG001",
+      "severity": "low",
+      "title": "Configuration file could not be read",
+      "client": "custom",
+      "file": "testdata/scan/broken.json",
+      "detail": "not a JSON object: unexpected end of JSON input",
+      "fix": "Fix the file so the client can read it too; until then its servers were not scanned."
+    }
+  ],
+  "counts": {
+    "critical": 0,
+    "high": 0,
+    "info": 0,
+    "low": 1,
+    "medium": 0
+  },
+  "notes": [
+    "Tool descriptions, and the resources and prompts each server offers, were not checked: that needs starting the servers (sievant scan --inspect-tools, which runs them)."
+  ]
+}

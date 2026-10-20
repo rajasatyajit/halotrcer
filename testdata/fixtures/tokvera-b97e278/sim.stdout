@@ -1,0 +1,5 @@
+Efficiency Score: A (97.2 / 100, provisional scoring 0.9.0)
+Requests: 24 sent, 24 succeeded.
+  1. [warn] No Prometheus metrics at /metrics: no Prometheus exposition answered at /metrics on the target's origin
+Report: sim/report.html
+Data:   sim/report.json

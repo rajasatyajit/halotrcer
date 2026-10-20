@@ -55,6 +55,7 @@ func TestParseVersionLine(t *testing.T) {
 		{"tokvera", "tokvera v0.2.0 (commit abc1234)\nbuilt with go1.27.2\n", "v0.2.0"},
 		{"tokvera", "tokvera v0.1.0-dev (commit unknown)\n", "v0.1.0-dev"},
 		{"sievant", "sievant v0.2.0-rc.1\n", "v0.2.0-rc.1"},
+		{"sievant", "sievant dev\n", "dev"},
 	}
 	for _, c := range cases {
 		got, err := ParseVersionLine(c.tool, c.out)

@@ -111,12 +111,14 @@ func (m Matrix) Check(tool, version string) error {
 // stdout (tokvera scripts/install.sh:259-263). sievant version prints
 // "sievant vX.Y.Z" on stderr (sievant cmd/sievant/configcmd.go:55-66).
 var (
-	tokveraLineRE = regexp.MustCompile(`(?m)^tokvera (v[0-9][^\s]*)`)
-	sievantLineRE = regexp.MustCompile(`(?m)^sievant (v[0-9][^\s]*)`)
+	tokveraLineRE = regexp.MustCompile(`(?m)^tokvera (\S+)`)
+	sievantLineRE = regexp.MustCompile(`(?m)^sievant (\S+)`)
 )
 
-// ParseVersionLine extracts the version from a tool's `version` output
-// (stdout and stderr concatenated by the caller).
+// ParseVersionLine extracts the version token from a tool's `version`
+// output (stdout and stderr concatenated by the caller). A token that is not
+// vX.Y.Z (a source build prints "dev") is returned as is, for Check to
+// report as unrecognized.
 func ParseVersionLine(tool, out string) (string, error) {
 	var re *regexp.Regexp
 	switch tool {

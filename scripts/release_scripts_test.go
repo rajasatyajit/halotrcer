@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,8 +27,8 @@ func script(t *testing.T, dir string, env []string, name string, args ...string)
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if err != nil {
-		ee, ok := err.(*exec.ExitError)
-		if !ok {
+		var ee *exec.ExitError
+		if !errors.As(err, &ee) {
 			t.Fatalf("%s: %v", name, err)
 		}
 		code = ee.ExitCode()

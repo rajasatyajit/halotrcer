@@ -3,6 +3,7 @@ package scripts
 import (
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -147,7 +148,7 @@ func TestReleaseWorkflow(t *testing.T) {
 	publish := stepIndex(t, pub, "Publish the image, the Homebrew cask")
 	chart := stepIndex(t, pub, "Package and push the Helm chart")
 	repos := stepIndex(t, pub, "Publish the signed apt and yum repositories")
-	if !(verify < bundled && bundled < rebuild && rebuild < compare && compare < publish && publish < chart && chart < repos) {
+	if order := []int{verify, bundled, rebuild, compare, publish, chart, repos}; !slices.IsSorted(order) || len(slices.Compact(slices.Clone(order))) != len(order) {
 		t.Errorf("publish order: verify %d, bundled %d, rebuild %d, compare %d, publish %d, chart %d, repos %d", verify, bundled, rebuild, compare, publish, chart, repos)
 	}
 	if !strings.Contains(pub.Steps[bundled].Run, "--certificate-identity \"$identity\"") || strings.Contains(pub.Steps[bundled].Run, "identity-regexp") {

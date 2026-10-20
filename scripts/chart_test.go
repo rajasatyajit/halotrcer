@@ -1,6 +1,7 @@
 package scripts
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -66,7 +67,7 @@ func TestPushChart(t *testing.T) {
 		cmd := exec.CommandContext(t.Context(), "sh", "release/push-chart.sh", "c.tgz", repo)
 		cmd.Env = append(os.Environ(), env...)
 		out, err := cmd.Output()
-		if ee, ok := err.(*exec.ExitError); ok {
+		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) {
 			return string(out), ee.ExitCode()
 		}
 		return string(out), 0

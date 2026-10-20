@@ -294,3 +294,19 @@ func TestDemoArgs(t *testing.T) {
 		t.Errorf("%q", got)
 	}
 }
+
+// The --timeout budget starts after the prompt: a slow "yes" must not
+// leave the scans without time.
+func TestTimeoutStartsAfterConfirmation(t *testing.T) {
+	f := newFakes(t)
+	f.write(t)
+	o := opts(t)
+	o.Yes = false
+	o.Timeout = 2 * time.Second
+	var out, errb bytes.Buffer
+	e := f.env(&out, &errb, true, true)
+	e.Confirm = func(string) bool { time.Sleep(2500 * time.Millisecond); return true }
+	if code := Run(context.Background(), o, e); code != ExitOK {
+		t.Fatalf("exit %d: %s", code, errb.String())
+	}
+}

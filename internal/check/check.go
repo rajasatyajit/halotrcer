@@ -79,6 +79,9 @@ type Env struct {
 	Redactor *redact.Redactor
 }
 
+// planTimeout bounds Tokvera's --dry-run (it reads the model list, sends no load).
+const planTimeout = 2 * time.Minute
+
 var envNameRE = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // Validate checks the options before anything runs.
@@ -192,8 +195,6 @@ func Run(ctx context.Context, o Options, e Env) int {
 		logf("halotrcer check: %v", err)
 		return ExitUsage
 	}
-	ctx, cancel := context.WithTimeout(ctx, o.Timeout)
-	defer cancel()
 	m := compat.Load()
 
 	var tok, sv *toolState
@@ -240,6 +241,10 @@ func Run(ctx context.Context, o Options, e Env) int {
 		}
 	}
 
+	// The --timeout budget covers the scans, not the time spent reading the
+	// plan and answering the prompt.
+	ctx, cancel := context.WithTimeout(ctx, o.Timeout)
+	defer cancel()
 	var (
 		wg      sync.WaitGroup
 		tokRep  *ingest.TokveraReport
@@ -359,7 +364,9 @@ func confirm(ctx context.Context, o Options, e Env, path string, env []string, o
 		_, _ = fmt.Fprintln(e.Stderr, "halotrcer check: Tokvera sends load to the target; with no terminal to confirm, pass --yes")
 		return ExitUsage, false
 	}
-	res := tools.Run(ctx, path, append(o.tokveraArgs(out), "--dry-run"), env, "")
+	pctx, cancel := context.WithTimeout(ctx, planTimeout)
+	defer cancel()
+	res := tools.Run(pctx, path, append(o.tokveraArgs(out), "--dry-run"), env, "")
 	if res.Err != nil || res.ExitCode != 0 {
 		_, _ = fmt.Fprintln(e.Stderr, rd.String("tokvera: the scan plan failed: "+res.Summary()))
 		return ExitFailure, false

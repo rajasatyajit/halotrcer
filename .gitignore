@@ -1,0 +1,11 @@
+bin/
+/dist/
+/halotrcer
+/halotrcer.exe
+leaks.json*
+# Private key material never enters git (public keys are *.rsa.pub / *.asc).
+*.rsa
+*.key
+*.pem
+private*.asc
+*secret*

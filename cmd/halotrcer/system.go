@@ -49,6 +49,43 @@ func (r redactingWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// lineRedactor scrubs a subprocess's output a line at a time ('\n' or '\r'
+// ends a line, so progress bars still move), so a secret split across two
+// writes is still caught.
+type lineRedactor struct {
+	w   io.Writer
+	rd  *redact.Redactor
+	buf []byte
+}
+
+const maxLine = 64 << 10
+
+func (l *lineRedactor) Write(p []byte) (int, error) {
+	l.buf = append(l.buf, p...)
+	for {
+		i := bytes.IndexAny(l.buf, "\r\n")
+		if i < 0 {
+			break
+		}
+		if _, err := io.WriteString(l.w, l.rd.String(string(l.buf[:i]))+string(l.buf[i])); err != nil {
+			return 0, err
+		}
+		l.buf = l.buf[i+1:]
+	}
+	if len(l.buf) > maxLine { // a line with no end: flush it rather than grow
+		l.Flush()
+	}
+	return len(p), nil
+}
+
+// Flush writes what is left.
+func (l *lineRedactor) Flush() {
+	if len(l.buf) > 0 {
+		_, _ = io.WriteString(l.w, l.rd.String(string(l.buf)))
+		l.buf = nil
+	}
+}
+
 func newInstaller(stdout, stderr io.Writer) (*install.Installer, error) {
 	sys := hostSystem()
 	dl, err := install.NewDownloader(os.Getenv)
@@ -60,9 +97,14 @@ func newInstaller(stdout, stderr io.Writer) (*install.Installer, error) {
 		Sys: sys, DL: dl,
 		Out: redactingWriter{stdout, rd}, Err: redactingWriter{stderr, rd},
 		Exec: func(ctx context.Context, argv []string) error {
+			// brew, scoop, winget and go print home paths and URLs too.
+			o, e := &lineRedactor{w: stdout, rd: rd}, &lineRedactor{w: stderr, rd: rd}
 			cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
-			cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, stdout, stderr
-			return cmd.Run()
+			cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, o, e
+			err := cmd.Run()
+			o.Flush()
+			e.Flush()
+			return err
 		},
 		Find:      tools.Find,
 		Version:   probeVersion,

@@ -46,6 +46,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return exitOK
 	case "check":
 		return runCheck(args[1:], stdout, stderr)
+	case "install":
+		return runInstall(args[1:], stdout, stderr)
+	case "doctor":
+		return runDoctor(args[1:], stdout, stderr)
+	case "update":
+		return runUpdate(args[1:], stdout, stderr)
+	case "uninstall":
+		return runUninstall(args[1:], stdout, stderr)
 	case "version", "--version":
 		_, _ = fmt.Fprintf(stdout, "halotrcer %s (commit %s)\n", buildVersion(), buildCommit())
 		return exitOK

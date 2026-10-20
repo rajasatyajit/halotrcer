@@ -33,6 +33,8 @@ const (
 	DefaultAPIBase      = "https://api.github.com/repos/rajasatyajit"
 )
 
+var errNotFound = errors.New("HTTP 404")
+
 // Limits on what a download may be.
 const (
 	maxArchive   = 256 << 20
@@ -117,6 +119,9 @@ func (d *Downloader) get(ctx context.Context, rawURL string, limit int64) ([]byt
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("%s: %w", rawURL, errNotFound)
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%s: HTTP %d", rawURL, resp.StatusCode)
 	}
@@ -134,6 +139,9 @@ func (d *Downloader) get(ctx context.Context, rawURL string, limit int64) ([]byt
 // excludes prereleases, as the tools' installers rely on).
 func (d *Downloader) Latest(ctx context.Context, t Tool) (string, error) {
 	b, err := d.get(ctx, d.APIBase+"/"+t.Repo+"/releases/latest", maxSmallFile)
+	if errors.Is(err, errNotFound) {
+		return "", fmt.Errorf("%s has no published release yet (github.com/rajasatyajit/%s); give --version for a release candidate", t.Name, t.Repo)
+	}
 	if err != nil {
 		return "", fmt.Errorf("finding the latest %s release: %w", t.Name, err)
 	}

@@ -464,3 +464,12 @@ func TestStateRoundTrip(t *testing.T) {
 		t.Error("corrupt state accepted")
 	}
 }
+
+func TestNoRelease(t *testing.T) {
+	rel := newRelease(t, Tokvera, "v0.2.0", Platform{"linux", "amd64"})
+	delete(rel.files, "/api/tokvera/releases/latest")
+	_, err := rel.downloader(t).Latest(context.Background(), Tokvera)
+	if err == nil || !strings.Contains(err.Error(), "no published release yet") {
+		t.Errorf("%v", err)
+	}
+}

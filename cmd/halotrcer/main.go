@@ -44,6 +44,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case "-h", "--help", "help":
 		_, _ = io.WriteString(stdout, usage)
 		return exitOK
+	case "check":
+		return runCheck(args[1:], stdout, stderr)
 	case "version", "--version":
 		_, _ = fmt.Fprintf(stdout, "halotrcer %s (commit %s)\n", buildVersion(), buildCommit())
 		return exitOK

@@ -13,8 +13,9 @@ name: release
 #      file in checksums.txt, its bundle attached to the draft.
 #   2. publish (the owner publishes the draft): the published checksums.txt
 #      is cosign-verified; Tokvera's and Sievant's images and charts pinned in
-#      packaging/bundled-tools.env are cosign-verified against their exact
-#      release identities; the release is rebuilt with the GitHub release
+#      packaging/bundled-tools.env are verified again (as in the draft's
+#      preflight: media type, then cosign against their exact release
+#      identities) and the umbrella chart is built from them; the release is rebuilt with the GitHub release
 #      off (RELEASE_PHASE=publish) and every archive must be byte-identical
 #      to the published one and carry phase 1's provenance; then GoReleaser
 #      pushes the image (the three binaries), the cask, the Scoop manifest and
@@ -82,19 +83,39 @@ jobs:
           cache: false
       - name: Install PDF checkers
         run: sudo apt-get update -qq && sudo apt-get install -y -qq qpdf poppler-utils
-      # helm for the umbrella chart's packaging test (make test).
-      - name: Install helm
+      # helm (the umbrella chart, and its packaging test in make test) and
+      # oras (the bundled charts), at both tools' pins.
+      - name: Install helm and oras
         env:
           HELM_VERSION: 4.3.0
           HELM_SHA256: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
+          ORAS_VERSION: 1.3.4
+          ORAS_SHA256: f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
         run: |
           set -euo pipefail
-          dir="$RUNNER_TEMP/helm"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          dir="$RUNNER_TEMP/charttools"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
           f="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
           curl -fsSLo "$f" "https://get.helm.sh/$f"
           echo "${HELM_SHA256}  $f" | sha256sum -c -
           tar xzf "$f" -C "$dir" --strip-components=1 linux-amd64/helm
+          f="oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/$f"
+          echo "${ORAS_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" oras
           echo "$dir" >> "$GITHUB_PATH"
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      # The pinned Tokvera and Sievant images and charts are verified, and the
+      # umbrella chart is built from them, before the draft exists: a wrong
+      # pin, or a tool chart that cannot be a subchart, stops the release
+      # here rather than after the owner has published the draft.
+      - name: The bundled Tokvera and Sievant artifacts verify, and the chart builds from them
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          sh scripts/release/bundled-tools.sh > "$RUNNER_TEMP/bundled.env"
+          sh scripts/release/verify-bundled.sh "$RUNNER_TEMP/bundled.env"
+          sh scripts/release/bundled-chart.sh "$RUNNER_TEMP/bundled.env" "$TAG" "$RUNNER_TEMP/chart"
       # The ci.yml gates that need no extra tool, at the tagged commit, with
       # no write token.
       - name: Gates (at the tagged commit)
@@ -322,22 +343,12 @@ jobs:
         run: |
           set -euo pipefail
           sh scripts/release/bundled-tools.sh > "$RUNNER_TEMP/bundled.env"
+          sh scripts/release/verify-bundled.sh "$RUNNER_TEMP/bundled.env"
+          # TOKVERA_IMAGE and SIEVANT_IMAGE are the Dockerfile's build arguments.
           cat "$RUNNER_TEMP/bundled.env" >> "$GITHUB_ENV"
-          while IFS='=' read -r key value; do
-            case "$key" in
-            TOKVERA_*|SIEVANT_*) export "$key=$value" ;;
-            *) echo "unexpected line from bundled-tools.sh: $key" >&2; exit 1 ;;
-            esac
-          done < "$RUNNER_TEMP/bundled.env"
-          for ref in "$TOKVERA_IMAGE:$TOKVERA_IDENTITY" "$TOKVERA_CHART:$TOKVERA_IDENTITY" \
-                     "$SIEVANT_IMAGE:$SIEVANT_IDENTITY" "$SIEVANT_CHART:$SIEVANT_IDENTITY"; do
-            artifact="${ref%%:https://*}"
-            identity="${ref#"$artifact":}"
-            cosign verify "$artifact" \
-              --certificate-identity "$identity" \
-              --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
-            echo "verified $artifact ($identity)"
-          done
+      # Built before anything is published, pushed after the other channels.
+      - name: Package the Helm chart
+        run: sh scripts/release/bundled-chart.sh "$RUNNER_TEMP/bundled.env" "$TAG" "$RUNNER_TEMP/chart"
       - name: Rebuild, publishing nothing
         run: goreleaser release --clean --skip=publish,docker,nfpm,sbom,sign
       - name: Every archive is the published one, with phase 1's provenance
@@ -371,19 +382,16 @@ jobs:
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
           create-storage-record: false
-      # The umbrella chart, in this phase only: both tools' charts fetched by
-      # the digests verified above and vendored (helm resolves nothing
-      # itself), then pushed, signed and attested like both tools' charts.
-      - name: Package and push the Helm chart
+      # The umbrella chart, in this phase only, with both tools' charts
+      # vendored by the digests verified above (helm resolves nothing
+      # itself): pushed, signed and attested like both tools' charts.
+      - name: Push the Helm chart
         id: chart
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
-          sh scripts/release/fetch-chart.sh "$TOKVERA_CHART" "$RUNNER_TEMP/subcharts/tokvera.tgz"
-          sh scripts/release/fetch-chart.sh "$SIEVANT_CHART" "$RUNNER_TEMP/subcharts/sievant.tgz"
-          sh scripts/release/package-chart.sh "$TAG" "$RUNNER_TEMP/subcharts/tokvera.tgz" "$RUNNER_TEMP/subcharts/sievant.tgz" "$RUNNER_TEMP/chart"
           printf '%s' "$GITHUB_TOKEN" | helm registry login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
           digest="$(sh scripts/release/push-chart.sh "$RUNNER_TEMP/chart/halotrcer-${TAG#v}.tgz" oci://ghcr.io/rajasatyajit/charts)"
           echo "digest=$digest" >> "$GITHUB_OUTPUT"

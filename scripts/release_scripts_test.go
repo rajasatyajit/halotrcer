@@ -168,6 +168,17 @@ func TestPreflight(t *testing.T) {
 			t.Errorf("%s: exit %d, want %d with %q:\n%s", c.name, code, c.code, c.wants, out)
 		}
 	}
+	// A stable tag must not bundle a release candidate; an rc tag may.
+	writeFile(t, filepath.Join(repo, "packaging", "bundled-tools.env"), pins("v0.2.0", "v0.2.1-rc.1"), 0o644)
+	gitIn(t, repo, "commit", "-qam", "rc pin")
+	gitIn(t, repo, "tag", "v1.1.0")
+	gitIn(t, repo, "tag", "v1.1.0-rc.1")
+	if out, code := script(t, repo, draft, "preflight.sh", "draft", "v1.1.0"); code != 1 || !strings.Contains(out, "pins the release candidate SIEVANT v0.2.1-rc.1") {
+		t.Errorf("a stable tag bundling an rc (%d):\n%s", code, out)
+	}
+	if out, code := script(t, repo, draft, "preflight.sh", "draft", "v1.1.0-rc.1"); code != 0 {
+		t.Errorf("an rc tag bundling an rc was refused (%d):\n%s", code, out)
+	}
 	// The side tag's pins are empty: refused for that reason too.
 	if out, _ := script(t, repo, draft, "preflight.sh", "draft", "v1.0.2"); !strings.Contains(out, "does not pin released Tokvera and Sievant") {
 		t.Errorf("unpinned tools at the tag were not refused:\n%s", out)
@@ -315,5 +326,70 @@ func TestImageSubject(t *testing.T) {
 		if code != x.code || (code == 0 && out != digestA+"\n") {
 			t.Errorf("%s: exit %d output %q, want %d", x.name, code, out, x.code)
 		}
+	}
+}
+
+// TestVerifyBundled runs verify-bundled.sh with fake oras and cosign: the
+// image must be an index and the chart a Helm chart (so the two digests
+// cannot be swapped), and cosign is asked for the exact tag identity.
+func TestVerifyBundled(t *testing.T) {
+	need(t, "jq")
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "bin")
+	// oras: an index for an image repository, a Helm chart for a charts/ one.
+	writeFile(t, filepath.Join(bin, "oras"), `#!/bin/sh
+case "$3" in
+*/charts/*) echo '{"mediaType":"application/vnd.oci.image.manifest.v1+json","config":{"mediaType":"application/vnd.cncf.helm.config.v1+json"}}' ;;
+*) echo '{"mediaType":"application/vnd.oci.image.index.v1+json"}' ;;
+esac
+`, 0o755)
+	writeFile(t, filepath.Join(bin, "cosign"), "#!/bin/sh\necho \"$*\" >>\"$COSIGN_LOG\"\n[ -z \"$COSIGN_FAIL\" ] || case \"$2\" in *\"$COSIGN_FAIL\"*) exit 1 ;; esac\n", 0o755)
+	log := filepath.Join(dir, "cosign.log")
+	env := []string{"PATH=" + bin + ":" + os.Getenv("PATH"), "COSIGN_LOG=" + log}
+	good := filepath.Join(dir, "pins.env")
+	writeFile(t, good, pins("v0.2.0", "v0.2.0"), 0o644)
+	bundled := filepath.Join(dir, "bundled.env")
+	out, code := script(t, dir, nil, "bundled-tools.sh", good)
+	if code != 0 {
+		t.Fatal(out)
+	}
+	writeFile(t, bundled, out, 0o644)
+
+	if out, code := script(t, dir, env, "verify-bundled.sh", bundled); code != 0 {
+		t.Fatalf("valid pins refused (%d):\n%s", code, out)
+	}
+	calls, _ := os.ReadFile(log)
+	for _, want := range []string{
+		"verify ghcr.io/rajasatyajit/tokvera@" + digestA + " --certificate-identity https://github.com/rajasatyajit/tokvera/.github/workflows/release.yml@refs/tags/v0.2.0 --certificate-oidc-issuer https://token.actions.githubusercontent.com",
+		"verify ghcr.io/rajasatyajit/charts/sievant@" + digestA + " --certificate-identity https://github.com/rajasatyajit/sievant/.github/workflows/release.yml@refs/tags/v0.2.0 --certificate-oidc-issuer https://token.actions.githubusercontent.com",
+	} {
+		if !strings.Contains(string(calls), want+"\n") {
+			t.Errorf("cosign was not called as %q:\n%s", want, calls)
+		}
+	}
+	if strings.Count(string(calls), "verify ") != 4 {
+		t.Errorf("want 4 cosign verifications:\n%s", calls)
+	}
+
+	// The chart's digest given as the image (and the image's as the chart).
+	swapped := strings.NewReplacer(
+		"TOKVERA_IMAGE=ghcr.io/rajasatyajit/tokvera@", "TOKVERA_IMAGE=ghcr.io/rajasatyajit/charts/tokvera@",
+	).Replace(out)
+	writeFile(t, filepath.Join(dir, "swapped.env"), swapped, 0o644)
+	if out, code := script(t, dir, env, "verify-bundled.sh", filepath.Join(dir, "swapped.env")); code == 0 || !strings.Contains(out, "is not a multi-platform image index") {
+		t.Errorf("a chart passed as the image (%d):\n%s", code, out)
+	}
+	chartAsImage := strings.Replace(out, "SIEVANT_CHART=ghcr.io/rajasatyajit/charts/sievant@", "SIEVANT_CHART=ghcr.io/rajasatyajit/sievant@", 1)
+	writeFile(t, filepath.Join(dir, "chart.env"), chartAsImage, 0o644)
+	if out, code := script(t, dir, env, "verify-bundled.sh", filepath.Join(dir, "chart.env")); code == 0 || !strings.Contains(out, "is not a Helm chart") {
+		t.Errorf("an image passed as the chart (%d):\n%s", code, out)
+	}
+	// A signature that does not verify stops it.
+	if out, code := script(t, dir, append(env, "COSIGN_FAIL=sievant@"), "verify-bundled.sh", bundled); code == 0 {
+		t.Errorf("a failed signature passed:\n%s", out)
+	}
+	writeFile(t, filepath.Join(dir, "extra.env"), out+"PATH=/tmp\n", 0o644)
+	if out, code := script(t, dir, env, "verify-bundled.sh", filepath.Join(dir, "extra.env")); code == 0 {
+		t.Errorf("an unexpected line passed:\n%s", out)
 	}
 }

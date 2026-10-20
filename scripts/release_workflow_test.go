@@ -146,12 +146,25 @@ func TestReleaseWorkflow(t *testing.T) {
 	rebuild := stepIndex(t, pub, "Rebuild, publishing nothing")
 	compare := stepIndex(t, pub, "Every archive is the published one")
 	publish := stepIndex(t, pub, "Publish the image, the Homebrew cask")
-	chart := stepIndex(t, pub, "Package and push the Helm chart")
+	chart := stepIndex(t, pub, "Package the Helm chart")
+	push := stepIndex(t, pub, "Push the Helm chart")
 	repos := stepIndex(t, pub, "Publish the signed apt and yum repositories")
-	if order := []int{verify, bundled, rebuild, compare, publish, chart, repos}; !slices.IsSorted(order) || len(slices.Compact(slices.Clone(order))) != len(order) {
-		t.Errorf("publish order: verify %d, bundled %d, rebuild %d, compare %d, publish %d, chart %d, repos %d", verify, bundled, rebuild, compare, publish, chart, repos)
+	// Nothing is published before the bundled artifacts verify and the
+	// chart builds from them; the chart is pushed after the other channels.
+	if order := []int{verify, bundled, chart, rebuild, compare, publish, push, repos}; !slices.IsSorted(order) || len(slices.Compact(slices.Clone(order))) != len(order) {
+		t.Errorf("publish order: verify %d, bundled %d, chart %d, rebuild %d, compare %d, publish %d, push %d, repos %d", verify, bundled, chart, rebuild, compare, publish, push, repos)
 	}
-	if !strings.Contains(pub.Steps[bundled].Run, "--certificate-identity \"$identity\"") || strings.Contains(pub.Steps[bundled].Run, "identity-regexp") {
+	pre := w.Jobs["draft-preflight"]
+	for _, job := range []workflowJob{pre, pub} {
+		i := stepIndex(t, job, "scripts/release/verify-bundled.sh")
+		if job.Steps[i].Run == "" || !strings.Contains(job.Steps[i].Run, "bundled-tools.sh") {
+			t.Error("the bundled artifacts are not verified from bundled-tools.sh's output")
+		}
+	}
+	if b, g := stepIndex(t, pre, "scripts/release/bundled-chart.sh"), stepIndex(t, pre, "Gates (at the tagged commit)"); b > g {
+		t.Error("the draft builds before the chart is known to build from the pins")
+	}
+	if src := string(root(t, "scripts/release/verify-bundled.sh")); !strings.Contains(src, `--certificate-identity "$4"`) || strings.Contains(src, "identity-regexp") {
 		t.Error("the bundled artifacts are not verified against their exact release identity")
 	}
 	id := install.Halotrcer.CosignIdentity()

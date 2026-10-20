@@ -17,7 +17,8 @@
 #     and the same three (the OpenPGP key signs the apt and yum metadata);
 #   - packaging/bundled-tools.env at TAG's commit pins released Tokvera and
 #     Sievant images and charts (bundled-tools.sh validates it): the image
-#     and the umbrella chart are built from them.
+#     and the umbrella chart are built from them. A stable TAG must pin
+#     stable tool releases.
 # The same checks as Tokvera's and Sievant's preflight, plus the last.
 set -eu
 
@@ -67,7 +68,19 @@ done
 if [ -n "$commit" ]; then
 	pins="$(mktemp)"
 	if git show "$commit:packaging/bundled-tools.env" >"$pins" 2>/dev/null; then
-		sh "$here/bundled-tools.sh" "$pins" >/dev/null || fail "packaging/bundled-tools.env at $tag does not pin released Tokvera and Sievant artifacts (above)"
+		if out="$(sh "$here/bundled-tools.sh" "$pins")"; then
+			# A stable release bundles stable tools: an rc's package is
+			# 0.2.0~rc.1, which the packages' ">= 0.2.0" does not accept, and
+			# a stable image should not carry a release candidate.
+			case "$tag" in *-*) ;; *)
+				for v in $(printf '%s\n' "$out" | sed -n 's/^\(TOKVERA\|SIEVANT\)_VERSION=\(.*-.*\)$/\1 \2/p' | tr ' ' '='); do
+					fail "stable $tag pins the release candidate ${v%%=*} ${v#*=}; pin a stable release"
+				done
+				;;
+			esac
+		else
+			fail "packaging/bundled-tools.env at $tag does not pin released Tokvera and Sievant artifacts (above)"
+		fi
 	else
 		fail "no packaging/bundled-tools.env at $tag"
 	fi

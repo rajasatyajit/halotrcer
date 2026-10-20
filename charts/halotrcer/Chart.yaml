@@ -16,7 +16,10 @@ keywords: [llm, inference, cost, latency, mcp, security, gateway]
 maintainers:
   - name: Halotrcer
     url: https://www.halotrcer.com
-# The two tools' released charts. The versions are placeholders:
+# The two tools' released charts, each switched on by its tag
+# (tags.tokvera, tags.sievant). Not `condition: <tool>.enabled`: that key
+# would reach the subchart's values, and both tools' values.schema.json
+# refuse unknown keys. The versions are placeholders:
 # scripts/release/package-chart.sh sets each to the version
 # packaging/bundled-tools.env pins and vendors that chart, fetched by digest
 # and cosign-verified, into charts/ (helm never resolves them itself).
@@ -24,11 +27,11 @@ dependencies:
   - name: tokvera
     version: 0.0.0-dev
     repository: oci://ghcr.io/rajasatyajit/charts
-    condition: tokvera.enabled
+    tags: [tokvera]
   - name: sievant
     version: 0.0.0-dev
     repository: oci://ghcr.io/rajasatyajit/charts
-    condition: sievant.enabled
+    tags: [sievant]
 annotations:
   licenses: Apache-2.0
   artifacthub.io/license: Apache-2.0

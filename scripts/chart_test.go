@@ -13,16 +13,18 @@ import (
 )
 
 // TestChartDefaults: the umbrella installs nothing of its own, takes both
-// tools' charts from their registry with a switch each, and both are off by
-// default (D8).
+// tools' charts from their registry, each switched on by its tag, and both
+// are off by default (D8). A condition (<tool>.enabled) would reach the
+// subchart's values, which both tools' schemas refuse.
 func TestChartDefaults(t *testing.T) {
 	var chart struct {
 		Name         string `yaml:"name"`
 		Dependencies []struct {
-			Name       string `yaml:"name"`
-			Version    string `yaml:"version"`
-			Repository string `yaml:"repository"`
-			Condition  string `yaml:"condition"`
+			Name       string   `yaml:"name"`
+			Version    string   `yaml:"version"`
+			Repository string   `yaml:"repository"`
+			Condition  string   `yaml:"condition"`
+			Tags       []string `yaml:"tags"`
 		} `yaml:"dependencies"`
 	}
 	if err := yaml.Unmarshal(root(t, "charts/halotrcer/Chart.yaml"), &chart); err != nil {
@@ -31,7 +33,7 @@ func TestChartDefaults(t *testing.T) {
 	var names []string
 	for _, d := range chart.Dependencies {
 		names = append(names, d.Name)
-		if d.Repository != "oci://ghcr.io/rajasatyajit/charts" || d.Condition != d.Name+".enabled" || d.Version != "0.0.0-dev" {
+		if d.Repository != "oci://ghcr.io/rajasatyajit/charts" || d.Condition != "" || !slices.Equal(d.Tags, []string{d.Name}) || d.Version != "0.0.0-dev" {
 			t.Errorf("dependency %+v", d)
 		}
 	}
@@ -42,9 +44,12 @@ func TestChartDefaults(t *testing.T) {
 	if err := yaml.Unmarshal(root(t, "charts/halotrcer/values.yaml"), &values); err != nil {
 		t.Fatal(err)
 	}
+	if len(values) != 1 || len(values["tags"]) != 2 {
+		t.Errorf("values %v; want only the two tags", values)
+	}
 	for _, tool := range []string{"tokvera", "sievant"} {
-		if values[tool]["enabled"] != false {
-			t.Errorf("%s.enabled = %v, want false by default (D8)", tool, values[tool]["enabled"])
+		if values["tags"][tool] != false {
+			t.Errorf("tags.%s = %v, want false by default (D8)", tool, values["tags"][tool])
 		}
 	}
 	entries, err := os.ReadDir("../charts/halotrcer/templates")
@@ -90,9 +95,12 @@ func TestPushChart(t *testing.T) {
 }
 
 // TestPackageChart vendors two fixture charts named like the tools' into the
-// umbrella and packages it: the dependency versions are the pinned ones, the
+// umbrella and packages it. The fixtures' schemas refuse unknown keys, as
+// both tools' charts do. The dependency versions are the pinned ones, the
 // tools are off by default and render when switched on, the checkout is not
-// modified, and a chart of the wrong name or version is refused.
+// modified, and a chart of the wrong name or version is refused, as is a
+// subchart whose schema refuses the `global` key helm gives every subchart
+// (Tokvera's chart at 0f37696).
 func TestPackageChart(t *testing.T) {
 	need(t, "helm")
 	dir := t.TempDir()
@@ -106,14 +114,23 @@ func TestPackageChart(t *testing.T) {
 		}
 		return string(out)
 	}
-	sub := func(name, version string) string {
-		src := filepath.Join(dir, "src", name+"-"+version, name)
+	// Each fixture's schema allows only its own settings (and `global`,
+	// unless noGlobal), as strict as the tools' charts.
+	settings := map[string]string{"tokvera": "scan", "sievant": "gateway"}
+	subSchema := func(name, version string, noGlobal bool) string {
+		src := filepath.Join(dir, "src", name+"-"+version+map[bool]string{true: "-noglobal"}[noGlobal], name)
 		writeFile(t, filepath.Join(src, "Chart.yaml"), "apiVersion: v2\nname: "+name+"\nversion: "+version+"\n", 0o644)
+		global := `, "global": {"type": "object"}`
+		if noGlobal {
+			global = ""
+		}
+		writeFile(t, filepath.Join(src, "values.schema.json"), `{"type": "object", "additionalProperties": false, "properties": {"`+settings[name]+`": {"type": "object"}`+global+`}}`, 0o644)
 		writeFile(t, filepath.Join(src, "templates", "cm.yaml"), "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: {{ .Release.Name }}-"+name+"\n", 0o644)
-		out := filepath.Join(dir, "sub", name+"-"+version)
+		out := filepath.Join(dir, "sub", filepath.Base(filepath.Dir(src)))
 		helm("package", src, "--destination", out)
 		return filepath.Join(out, name+"-"+version+".tgz")
 	}
+	sub := func(name, version string) string { return subSchema(name, version, false) }
 	tok, siv := sub("tokvera", "0.2.0"), sub("sievant", "0.2.1")
 	before := string(root(t, "charts/halotrcer/Chart.yaml"))
 	env := []string{"TOKVERA_CHART_VERSION=0.2.0", "SIEVANT_CHART_VERSION=0.2.1",
@@ -127,7 +144,7 @@ func TestPackageChart(t *testing.T) {
 		t.Error("package-chart.sh modified the checkout's chart")
 	}
 	meta := helm("show", "chart", tgz)
-	for _, want := range []string{"version: 1.2.3", "appVersion: 1.2.3", "name: tokvera\n  repository: oci://ghcr.io/rajasatyajit/charts\n  version: 0.2.0", "name: sievant\n  repository: oci://ghcr.io/rajasatyajit/charts\n  version: 0.2.1"} {
+	for _, want := range []string{"version: 1.2.3", "appVersion: 1.2.3", "name: tokvera\n  repository: oci://ghcr.io/rajasatyajit/charts\n  tags:\n  - tokvera\n  version: 0.2.0", "name: sievant\n  repository: oci://ghcr.io/rajasatyajit/charts\n  tags:\n  - sievant\n  version: 0.2.1"} {
 		if !strings.Contains(meta, want) {
 			t.Errorf("packaged Chart.yaml lacks %q:\n%s", want, meta)
 		}
@@ -135,11 +152,11 @@ func TestPackageChart(t *testing.T) {
 	if out := helm("template", "r", tgz); strings.Contains(out, "kind:") {
 		t.Errorf("the default install renders resources (D8: both off):\n%s", out)
 	}
-	on := helm("template", "r", tgz, "--set", "tokvera.enabled=true", "--set", "sievant.enabled=true")
+	on := helm("template", "r", tgz, "--set", "tags.tokvera=true", "--set", "tags.sievant=true")
 	if !strings.Contains(on, "name: r-tokvera") || !strings.Contains(on, "name: r-sievant") {
 		t.Errorf("both enabled does not render both:\n%s", on)
 	}
-	only := helm("template", "r", tgz, "--set", "sievant.enabled=true")
+	only := helm("template", "r", tgz, "--set", "tags.sievant=true")
 	if strings.Contains(only, "r-tokvera") || !strings.Contains(only, "r-sievant") {
 		t.Errorf("sievant alone:\n%s", only)
 	}
@@ -151,6 +168,7 @@ func TestPackageChart(t *testing.T) {
 		"swapped":       {"v1.2.3", siv, tok, filepath.Join(dir, "o3")},
 		"sievant 0.2.0": {"v1.2.3", tok, wrongName, filepath.Join(dir, "o4")},
 		"bad tag":       {"1.2.3", tok, siv, filepath.Join(dir, "o5")},
+		"no global":     {"v1.2.3", subSchema("tokvera", "0.2.0", true), siv, filepath.Join(dir, "o6")},
 	} {
 		if out, code := script(t, dir, env, "package-chart.sh", args...); code == 0 {
 			t.Errorf("%s: packaged:\n%s", name, out)

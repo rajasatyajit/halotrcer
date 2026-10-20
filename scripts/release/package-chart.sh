@@ -10,7 +10,8 @@
 # versions). Each must be that tool's chart at exactly that version. The
 # umbrella's dependency versions are set to them, the charts are copied into
 # its charts/ directory, it is linted with both tools off (the default) and
-# both on, and packaged with the tag's version as version and appVersion.
+# both on (each tool's own schema checks its values, so a chart that cannot
+# be a subchart fails here, before anything is published), and packaged with the tag's version as version and appVersion.
 # Helm never resolves a dependency itself, so what ships is what was
 # verified. Writes OUT_DIR/halotrcer-X.Y.Z.tgz and nothing else; the
 # checkout's chart is never modified (the edits happen in a copy). Pushing
@@ -81,7 +82,7 @@ cp "$sievant_tgz" "$work/halotrcer/charts/sievant-$SIEVANT_CHART_VERSION.tgz"
 helm lint "$work/halotrcer" --strict
 # Both on, with the settings each tool's own release lints its chart with.
 helm lint "$work/halotrcer" --strict \
-	--set tokvera.enabled=true --set tokvera.scan.confirm=true --set tokvera.scan.target=http://release-check.invalid/v1 \
-	--set sievant.enabled=true --set-string 'sievant.gateway.config.inline=server: {transport: http}'
+	--set tags.tokvera=true --set tokvera.scan.confirm=true --set tokvera.scan.target=http://release-check.invalid/v1 \
+	--set tags.sievant=true --set-string 'sievant.gateway.config.inline=server: {transport: http}'
 mkdir -p "$out"
 helm package "$work/halotrcer" --version "$version" --app-version "$version" --destination "$out"

@@ -266,3 +266,51 @@ func TestUSD(t *testing.T) {
 		}
 	}
 }
+
+// TestTokveraProvisionalWords: from schema v1.3.0 Tokvera's report.json
+// carries the label and note, and the combined report shows those words in
+// every format; an older report (score.provisional only) gets the documented
+// copy; a grade that is not provisional shows neither.
+func TestTokveraProvisionalWords(t *testing.T) {
+	tok, sv, _ := load(t, "flaky.report.json", "scan-all.json", "")
+	newer := *tok
+	newer.SchemaVersion = "tokvera.scan-report/v1.3.0"
+	newer.Score.ProvisionalLabel = "Label from report.json"
+	newer.Score.ProvisionalNote = "Note from report.json."
+	r := Build(inputs(&newer, sv, nil))
+	if c := r.CostPerformance; c.ProvisionalLabel != "Label from report.json" || c.ProvisionalNote != "Note from report.json." {
+		t.Errorf("v1.3.0: label %q note %q", c.ProvisionalLabel, c.ProvisionalNote)
+	}
+	var html, js bytes.Buffer
+	if err := r.WriteHTML(&html); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.WriteJSON(&js); err != nil {
+		t.Fatal(err)
+	}
+	for name, out := range map[string]string{"html": html.String(), "json": js.String()} {
+		if !strings.Contains(out, "Label from report.json") || !strings.Contains(out, "Note from report.json.") {
+			t.Errorf("%s does not show the report's own words", name)
+		}
+		if strings.Contains(out, TokveraProvisionalNote) {
+			t.Errorf("%s shows the fallback note although the report carries one", name)
+		}
+	}
+
+	r = Build(inputs(tok, sv, nil))
+	if c := r.CostPerformance; c.ProvisionalLabel != TokveraProvisionalLabel || c.ProvisionalNote != TokveraProvisionalNote {
+		t.Errorf("v1.2.0 fallback: label %q note %q", c.ProvisionalLabel, c.ProvisionalNote)
+	}
+
+	final := *tok
+	final.Score.Provisional = false
+	final.Score.ProvisionalLabel, final.Score.ProvisionalNote = "", ""
+	r = Build(inputs(&final, sv, nil))
+	html.Reset()
+	if err := r.WriteHTML(&html); err != nil {
+		t.Fatal(err)
+	}
+	if c := r.CostPerformance; c.ProvisionalLabel != "" || c.ProvisionalNote != "" || strings.Contains(html.String(), TokveraProvisionalLabel) {
+		t.Errorf("a final grade shows a provisional label: %+v", c)
+	}
+}

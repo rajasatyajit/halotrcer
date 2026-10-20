@@ -22,9 +22,11 @@ const (
 )
 
 // Tokvera's provisional label and note, as Tokvera documents them
-// (tokvera docs/scoring.md:94, also score.ProvisionalLabel and
-// score.ProvisionalNote). Shown, unchanged, whenever its report has
-// score.provisional true; report.json carries the flag, not the words.
+// (tokvera docs/scoring.md:94, score.ProvisionalLabel and
+// score.ProvisionalNote). From schema v1.3.0 report.json carries the words
+// itself (score.provisional_label and provisional_note), and those are
+// shown; these are the fallback for an older report that carries only
+// score.provisional.
 const (
 	TokveraProvisionalLabel = "Provisional scoring"
 	TokveraProvisionalNote  = "The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0."
@@ -82,26 +84,27 @@ type Summary struct {
 
 // CostPerformance is the Tokvera section.
 type CostPerformance struct {
-	Target          string         `json:"target"`
-	Model           string         `json:"model"`
-	Simulated       bool           `json:"simulated"`
-	SimulatedTiming bool           `json:"simulated_timing"`
-	Grade           string         `json:"grade"`
-	Points          *float64       `json:"points,omitempty"`
-	GradeReason     string         `json:"grade_reason,omitempty"`
-	ScoringVersion  string         `json:"scoring_version"`
-	Provisional     bool           `json:"provisional"`
-	ProvisionalNote string         `json:"provisional_note,omitempty"`
-	Caps            []string       `json:"caps,omitempty"`
-	Requests        int            `json:"requests"`
-	Succeeded       int            `json:"succeeded"`
-	Failed          int            `json:"failed"`
-	DurationMS      int64          `json:"duration_ms"`
-	Levels          []Level        `json:"levels"`
-	Cost            Cost           `json:"cost"`
-	Spend           *scoring.Spend `json:"spend,omitempty"`
-	Findings        []scoring.Item `json:"findings"`
-	Privacy         []string       `json:"privacy"`
+	Target           string         `json:"target"`
+	Model            string         `json:"model"`
+	Simulated        bool           `json:"simulated"`
+	SimulatedTiming  bool           `json:"simulated_timing"`
+	Grade            string         `json:"grade"`
+	Points           *float64       `json:"points,omitempty"`
+	GradeReason      string         `json:"grade_reason,omitempty"`
+	ScoringVersion   string         `json:"scoring_version"`
+	Provisional      bool           `json:"provisional"`
+	ProvisionalLabel string         `json:"provisional_label,omitempty"`
+	ProvisionalNote  string         `json:"provisional_note,omitempty"`
+	Caps             []string       `json:"caps,omitempty"`
+	Requests         int            `json:"requests"`
+	Succeeded        int            `json:"succeeded"`
+	Failed           int            `json:"failed"`
+	DurationMS       int64          `json:"duration_ms"`
+	Levels           []Level        `json:"levels"`
+	Cost             Cost           `json:"cost"`
+	Spend            *scoring.Spend `json:"spend,omitempty"`
+	Findings         []scoring.Item `json:"findings"`
+	Privacy          []string       `json:"privacy"`
 }
 
 // Level is one concurrency level's latency, from Tokvera's levels[].

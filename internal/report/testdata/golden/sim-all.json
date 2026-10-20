@@ -143,6 +143,7 @@
     "points": 97.2,
     "scoring_version": "0.9.0",
     "provisional": true,
+    "provisional_label": "Provisional scoring",
     "provisional_note": "The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0.",
     "requests": 24,
     "succeeded": 24,

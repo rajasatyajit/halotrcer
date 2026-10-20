@@ -155,7 +155,13 @@ func costPerformance(t *ingest.TokveraReport, items []scoring.Item, spend *scori
 		}
 	}
 	if t.Score.Provisional {
-		c.ProvisionalNote = TokveraProvisionalNote
+		c.ProvisionalLabel, c.ProvisionalNote = t.Score.ProvisionalLabel, t.Score.ProvisionalNote
+		if c.ProvisionalLabel == "" {
+			c.ProvisionalLabel = TokveraProvisionalLabel
+		}
+		if c.ProvisionalNote == "" {
+			c.ProvisionalNote = TokveraProvisionalNote
+		}
 	}
 	for _, cp := range t.Score.CapsApplied {
 		c.Caps = append(c.Caps, fmt.Sprintf("capped at %s: %s", cp.MaxGrade, cp.Reason))

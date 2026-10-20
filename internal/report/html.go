@@ -93,7 +93,7 @@ a{color:var(--accent)}
 <section id="summary">
 <h2>Executive summary</h2>
 <div class="tiles">
-{{if .CostPerformance}}<div class="tile"><div class="k">Efficiency grade (Tokvera)</div><div class="v">{{grade .Summary.Grade}}</div><div class="n">{{if .Summary.GradeProvisional}}Provisional scoring{{end}}{{with .Summary.ReliabilityConcern}} · reliability concern{{end}}</div></div>
+{{if .CostPerformance}}<div class="tile"><div class="k">Efficiency grade (Tokvera)</div><div class="v">{{grade .Summary.Grade}}</div><div class="n">{{if .Summary.GradeProvisional}}{{.CostPerformance.ProvisionalLabel}}{{end}}{{with .Summary.ReliabilityConcern}} · reliability concern{{end}}</div></div>
 <div class="tile"><div class="k">Cost per 1,000 requests</div>{{with .Summary.USDPer1kRequests}}<div class="v">{{usd .}}</div><div class="n">measured, {{if $.CostPerformance.Cost.Estimate}}estimate {{end}}at {{$.CostPerformance.Cost.PricingAsOf}} rates</div>{{else}}<div class="v">—</div><div class="n">not computed</div>{{end}}</div>
 {{with .Summary.Spend}}<div class="tile"><div class="k">At your volume</div><div class="v">{{usd .MonthlyUSD}}/mo</div><div class="n">{{commas .MonthlyRequests}} requests/month you gave × measured cost</div></div>{{end}}{{end}}
 {{if .AgentSecurity}}<div class="tile"><div class="k">Agent security (Sievant)</div><div class="v">{{index .Summary.SecurityCounts "critical"}} critical · {{index .Summary.SecurityCounts "high"}} high</div><div class="n">{{len .AgentSecurity.Files}} MCP configuration file(s) read</div></div>
@@ -112,7 +112,7 @@ a{color:var(--accent)}
 <p class="small muted">From Tokvera: <code>{{.Target}}</code>{{with .Model}}, model <code>{{.}}</code>{{end}}.</p>
 {{if .Simulated}}<div class="banner"><strong>Simulated.</strong> Tokvera measured its built-in demo server{{if .SimulatedTiming}} with declared, not measured, timings{{end}}; these numbers describe no real endpoint.</div>{{end}}
 <p><strong>Efficiency grade: {{grade .Grade}}</strong> ({{points .Points}} / 100, scoring {{.ScoringVersion}}){{with .GradeReason}} · {{.}}{{end}}</p>
-{{if .Provisional}}<p class="small"><strong>Provisional scoring.</strong> {{.ProvisionalNote}}</p>{{end}}
+{{if .Provisional}}<p class="small"><strong>{{.ProvisionalLabel}}.</strong> {{.ProvisionalNote}}</p>{{end}}
 {{range .Caps}}<p class="small muted">{{.}}</p>{{end}}
 <p class="small">Requests: {{.Requests}} sent, {{.Succeeded}} succeeded, {{.Failed}} failed, in {{float1 (divms .DurationMS)}} s.</p>
 {{if .Levels}}<div class="scroll"><table>

@@ -128,14 +128,14 @@ func TestWithTools(t *testing.T) {
 		t.Fatal(err)
 	}
 	if q, err := exec.LookPath("qpdf"); err == nil {
-		if out, err := exec.Command(q, "--check", path).CombinedOutput(); err != nil {
+		if out, err := exec.CommandContext(t.Context(), q, "--check", path).CombinedOutput(); err != nil {
 			t.Errorf("qpdf --check: %v\n%s", err, out)
 		}
 	} else if os.Getenv("CI") != "" {
 		t.Fatal("qpdf not installed in CI")
 	}
 	if p, err := exec.LookPath("pdftotext"); err == nil {
-		out, err := exec.Command(p, path, "-").Output()
+		out, err := exec.CommandContext(t.Context(), p, path, "-").Output()
 		if err != nil {
 			t.Fatalf("pdftotext: %v", err)
 		}

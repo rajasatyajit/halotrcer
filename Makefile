@@ -25,8 +25,11 @@ SHELL_SCRIPTS = $(wildcard scripts/*.sh) $(wildcard scripts/smoke/*.sh) $(wildca
 build:
 	CGO_ENABLED=0 $(STOCK_GO) build -trimpath -ldflags '$(LDFLAGS)' -o $(BIN) ./cmd/halotrcer
 
+# gofmt with no file arguments reads stdin, so an empty file list (no Go
+# files tracked yet) must skip the check rather than hang.
 fmt-check:
-	@out="$$(gofmt -l $$(git ls-files '*.go'))"; test -z "$$out" || { echo "gofmt needed:"; echo "$$out"; exit 1; }
+	@files="$$(git ls-files '*.go')"; test -n "$$files" || { echo "fmt-check: no Go files tracked yet"; exit 0; }; \
+	out="$$(gofmt -l $$files)"; test -z "$$out" || { echo "gofmt needed:"; echo "$$out"; exit 1; }
 
 vet: fmt-check
 	$(STOCK_GO) vet ./...

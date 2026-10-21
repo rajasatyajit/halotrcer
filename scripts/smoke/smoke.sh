@@ -31,7 +31,8 @@
 #                  served under /repo/: refused without the key, then
 #                  `install halotrcer` pulls tokvera and sievant from it
 #   brew           the three casks in a local rajasatyajit/tap, pointed at the
-#                  mirror: installing halotrcer installs both dependencies
+#                  mirror, installed with the documented command (all three
+#                  named, so Homebrew trusts exactly those three)
 #   goinstall      go install ./cmd/halotrcer from the checkout, then
 #                  `halotrcer install` for the tools
 #   image          the release image, built from the snapshot binary and
@@ -255,11 +256,17 @@ brew)
 			"$dist/casks/$p.rb" >"$casks/$p.rb"
 		grep -q "$base/dl/$p/releases/download/$t/" "$casks/$p.rb" || fail "brew: could not point the $p cask at the mirror"
 	done
-	HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_FROM_API=1 brew install --cask rajasatyajit/tap/halotrcer
-	for p in tokvera sievant; do
-		brew list --cask "rajasatyajit/tap/$p" >/dev/null 2>&1 || fail "brew: $p did not come with halotrcer"
+	brew --version | sed -n 1p
+	# Homebrew trusts a non-official tap's cask only when it is named on the
+	# command line (Homebrew 7.0.10 Library/Homebrew/trust.rb,
+	# trust_fully_qualified_items!); a dependency it was not given is
+	# refused. So docs/install.md names all three, and so does this.
+	HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_FROM_API=1 \
+		brew install --cask rajasatyajit/tap/tokvera rajasatyajit/tap/sievant rajasatyajit/tap/halotrcer
+	for p in halotrcer tokvera sievant; do
+		brew list --cask "rajasatyajit/tap/$p" >/dev/null 2>&1 || fail "brew: the $p cask is not installed"
 	done
-	pass "the halotrcer cask installed, with the tokvera and sievant casks as its dependencies"
+	pass "the documented brew command installed the halotrcer, tokvera and sievant casks"
 	bin="$(brew --prefix)/bin/halotrcer"
 	for p in halotrcer tokvera sievant; do
 		f="$(readlink -f "$(brew --prefix)/bin/$p" 2>/dev/null || echo "$(brew --prefix)/bin/$p")"

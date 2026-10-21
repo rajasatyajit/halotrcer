@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Halotrcer umbrella chart values",
+  "description": "Only the two tags are Halotrcer's; the values under tokvera and sievant are checked by that chart's own schema.",
+  "type": "object",
+  "properties": {
+    "tags": {
+      "type": "object",
+      "properties": {
+        "tokvera": {"type": "boolean"},
+        "sievant": {"type": "boolean"}
+      },
+      "required": ["tokvera", "sievant"],
+      "additionalProperties": false
+    },
+    "tokvera": {"type": "object"},
+    "sievant": {"type": "object"},
+    "global": {"type": "object"}
+  },
+  "required": ["tags"],
+  "additionalProperties": false
+}

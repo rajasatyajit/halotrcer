@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	tokveraDir = "../../testdata/fixtures/tokvera-b97e278"
+	tokveraDir = "../../testdata/fixtures/tokvera-f2a7906"
 	sievantDir = "../../testdata/fixtures/sievant-d8a8bcf"
 )
 
@@ -45,6 +45,11 @@ func TestDecodeTokveraFixtures(t *testing.T) {
 		}
 		if rep.Score.Grade != c.grade || len(rep.Findings) != c.findings || (rep.Cost.USDPer1kRequests != nil) != c.cost || rep.Simulated != c.simulated {
 			t.Errorf("%s: grade %s findings %d cost %v simulated %v", c.file, rep.Score.Grade, len(rep.Findings), rep.Cost.USDPer1kRequests, rep.Simulated)
+		}
+		// The current fixture is the schema the matrix says this release
+		// was tested against, and carries the v1.3.0 provisional words.
+		if rep.SchemaVersion != m.Tools["tokvera"].SchemaTested || rep.Score.ProvisionalLabel == "" || rep.Score.ProvisionalNote == "" {
+			t.Errorf("%s: schema %s, label %q, note %q", c.file, rep.SchemaVersion, rep.Score.ProvisionalLabel, rep.Score.ProvisionalNote)
 		}
 		if !rep.Score.Provisional || rep.Score.ScoringVersion == "" {
 			t.Errorf("%s: provisional %v scoring %q", c.file, rep.Score.Provisional, rep.Score.ScoringVersion)

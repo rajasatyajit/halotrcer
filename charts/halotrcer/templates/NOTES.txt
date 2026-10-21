@@ -1,0 +1,29 @@
+{{- if and (not .Values.tags.tokvera) (not .Values.tags.sievant) }}
+Halotrcer's umbrella chart installed nothing: Tokvera and Sievant are both
+off by default, because each needs settings only you can give.
+
+Tokvera (a scheduled cost and latency scan of one inference endpoint):
+  --set tags.tokvera=true \
+  --set tokvera.scan.target=http://<service>.<namespace>.svc.cluster.local:8000/v1 \
+  --set tokvera.scan.confirm=true
+  scan.confirm=true says you have read the load plan (tokvera scan --target ... --dry-run):
+  the CronJob sends load to the target on every run.
+
+Sievant (the MCP security gateway):
+  --set tags.sievant=true \
+  --set-file sievant.gateway.config.inline=sievant.yaml
+  (or --set sievant.gateway.config.existingSecret=<secret holding sievant.yaml>)
+
+Each chart's own values.yaml and documentation describe every other setting;
+put them under tokvera: and sievant:.
+{{- else }}
+Halotrcer {{ .Chart.AppVersion }} installed:
+{{- if .Values.tags.tokvera }}
+  - Tokvera
+{{- end }}
+{{- if .Values.tags.sievant }}
+  - Sievant
+{{- end }}
+Each tool's own notes (how to run it and where its results are) are shown
+when you install or upgrade with --render-subchart-notes.
+{{- end }}

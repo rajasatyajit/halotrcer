@@ -131,7 +131,7 @@ func (r *Report) WritePDF(w io.Writer) error {
 	if r.CostPerformance != nil {
 		g := "Efficiency grade (Tokvera): " + gradeLabel(s.Grade)
 		if s.GradeProvisional {
-			g += " · Provisional scoring"
+			g += " · " + r.CostPerformance.ProvisionalLabel
 		}
 		if s.ReliabilityConcern != "" {
 			g += " · reliability concern"
@@ -184,7 +184,7 @@ func (r *Report) WritePDF(w io.Writer) error {
 		}
 		l.text(fmt.Sprintf("Efficiency grade: %s (%s / 100, scoring %s)", gradeLabel(c.Grade), points(c.Points), c.ScoringVersion), 11, true, pdf.Black, 0)
 		if c.Provisional {
-			l.text(TokveraProvisionalLabel+". "+c.ProvisionalNote, 9, false, pdf.Black, 0)
+			l.text(c.ProvisionalLabel+". "+c.ProvisionalNote, 9, false, pdf.Black, 0)
 		}
 		for _, cp := range c.Caps {
 			l.text(cp, 9, false, colMuted, 0)

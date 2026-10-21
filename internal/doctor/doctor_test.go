@@ -29,7 +29,7 @@ func TestDoctor(t *testing.T) {
 		t.Skip("shell fakes")
 	}
 	dir := t.TempDir()
-	tokDoctor, _ := filepath.Abs("../../testdata/fixtures/tokvera-b97e278/doctor.json")
+	tokDoctor, _ := filepath.Abs("../../testdata/fixtures/tokvera-f2a7906/doctor.json")
 	svDoctor, _ := filepath.Abs("../../testdata/fixtures/sievant-d8a8bcf/doctor.json")
 	tok := script(t, dir, "tokvera", `case "$1" in version) echo "tokvera v0.2.0 (commit a)";; doctor) cat '`+tokDoctor+`';; esac`+"\n")
 	sv := script(t, dir, "sievant", `case "$1" in version) echo "sievant v0.1.0-157-gd8a8bcf" >&2;; doctor) cat '`+svDoctor+`';; esac`+"\n")

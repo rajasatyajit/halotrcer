@@ -1,0 +1,7 @@
+# Artifact Hub repository metadata for oci://ghcr.io/rajasatyajit/charts/halotrcer,
+# pushed by the release workflow as the artifacthub.io tag of that repository.
+# Once the repository is added on artifacthub.io, add the repositoryID it
+# assigns here (verified publisher).
+owners:
+  - name: Halotrcer
+    email: satyajit.rajaraman@halotrcer.com

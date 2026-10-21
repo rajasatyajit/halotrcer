@@ -143,41 +143,42 @@
     "points": 97.2,
     "scoring_version": "0.9.0",
     "provisional": true,
+    "provisional_label": "Provisional scoring",
     "provisional_note": "The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0.",
     "requests": 24,
     "succeeded": 24,
     "failed": 0,
-    "duration_ms": 1365,
+    "duration_ms": 1360,
     "levels": [
       {
         "concurrency": 1,
         "requests": 8,
         "failed": 0,
-        "ttft_p50_ms": 35.84647,
-        "ttft_p95_ms": 36.748869,
-        "ttft_p99_ms": 36.748869,
-        "request_duration_p95_ms": 98.213759,
-        "output_tokens_per_s_p50": 262.25343096329226
+        "ttft_p50_ms": 35.898201,
+        "ttft_p95_ms": 38.177188,
+        "ttft_p99_ms": 38.177188,
+        "request_duration_p95_ms": 99.100556,
+        "output_tokens_per_s_p50": 263.0047550273441
       },
       {
         "concurrency": 2,
         "requests": 8,
         "failed": 0,
-        "ttft_p50_ms": 36.088548,
-        "ttft_p95_ms": 36.927428,
-        "ttft_p99_ms": 36.927428,
-        "request_duration_p95_ms": 98.187349,
-        "output_tokens_per_s_p50": 261.30624772132785
+        "ttft_p50_ms": 35.778213,
+        "ttft_p95_ms": 36.026534,
+        "ttft_p99_ms": 36.026534,
+        "request_duration_p95_ms": 96.982565,
+        "output_tokens_per_s_p50": 262.9758661295056
       },
       {
         "concurrency": 4,
         "requests": 8,
         "failed": 0,
-        "ttft_p50_ms": 36.329375,
-        "ttft_p95_ms": 36.441296,
-        "ttft_p99_ms": 36.441296,
-        "request_duration_p95_ms": 98.480183,
-        "output_tokens_per_s_p50": 258.47094918997465
+        "ttft_p50_ms": 35.939559,
+        "ttft_p95_ms": 35.989985,
+        "ttft_p99_ms": 35.989985,
+        "request_duration_p95_ms": 96.84319,
+        "output_tokens_per_s_p50": 262.92936673708516
       }
     ],
     "cost": {

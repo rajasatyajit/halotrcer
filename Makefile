@@ -18,9 +18,9 @@ ACTIONLINT  ?= $(STOCK_GO) run github.com/rhysd/actionlint/cmd/actionlint@v1.7.1
 # shellcheck at the CI runner's version (v0.9.0) and the current one
 # (v0.11.0), pinned by image digest as Sievant does (its Makefile:109).
 SHELLCHECK_IMAGES := koalaman/shellcheck@sha256:f35e8987b02760d4e76fc99a68ad5c42cc10bb32f3dd2143a3cf92f1e5446a45 koalaman/shellcheck@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d
-SHELL_SCRIPTS = $(wildcard scripts/*.sh) $(wildcard scripts/smoke/*.sh) $(wildcard scripts/release/*.sh)
+SHELL_SCRIPTS = $(wildcard scripts/*.sh) $(wildcard scripts/ci/*.sh) $(wildcard scripts/smoke/*.sh) $(wildcard scripts/release/*.sh)
 
-.PHONY: build fmt-check vet test lint toolchain-check vuln secrets actionlint shellcheck gates
+.PHONY: build fmt-check vet test lint toolchain-check vuln secrets actionlint shellcheck gates release-check repos-check
 
 build:
 	CGO_ENABLED=0 $(STOCK_GO) build -trimpath -ldflags '$(LDFLAGS)' -o $(BIN) ./cmd/halotrcer
@@ -71,3 +71,19 @@ shellcheck:
 	done
 
 gates: vet test lint vuln secrets actionlint shellcheck
+
+# The release configuration: `goreleaser check` at the release pin (2.18.3,
+# as both tools). GORELEASER names the binary; CI installs the
+# checksum-verified one.
+GORELEASER ?= goreleaser
+release-check:
+	@v="$$($(GORELEASER) --version 2>&1 | sed -n 's/^GitVersion: *//p')"; test "$$v" = 2.18.3 || { echo "release-check: need goreleaser 2.18.3, have '$$v'" >&2; exit 1; }
+	$(GORELEASER) check
+
+# The shared apt/yum repository contract and the bundle's package
+# dependencies, in Docker (scripts/package_repos_integration_test.go): needs
+# docker, gpg, git and nfpm 2.47.0; runs the pinned Ubuntu, Fedora and
+# Alpine images several times and takes minutes. Ask before running it on a
+# shared machine (CLAUDE.md).
+repos-check:
+	$(STOCK_GO) test -tags integration -count=1 -timeout 30m -run 'TestSharedRepositories|TestPublishReposRetriesARace' -v ./scripts/

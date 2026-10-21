@@ -12,13 +12,18 @@ stamp on that commit.
 
 | Directory | Repository | Commit | Toolchain | Version printed |
 |---|---|---|---|---|
-| `tokvera-b97e278/` | github.com/rajasatyajit/tokvera | `b97e278381ee` | go1.27.2 | `tokvera v0.1.0-dev (commit b97e278)` |
+| `tokvera-f2a7906/` | github.com/rajasatyajit/tokvera | `f2a79068c4bd` | go1.27.2 | `tokvera v0.1.0-dev (commit f2a7906)` |
 | `sievant-d8a8bcf/` | github.com/rajasatyajit/sievant | `d8a8bcf0694e` | go1.26.9 | `sievant v0.1.0-157-gd8a8bcf` |
 
 Both version strings are outside the compatibility matrix (>=0.2.0), so
 tests that load these fixtures also exercise the out-of-range warning.
 
-## Tokvera (`tokvera-b97e278/`)
+## Tokvera (`tokvera-f2a7906/`)
+
+Report schema `tokvera.scan-report/v1.3.0`: `score` carries
+`provisional_label` and `provisional_note`. This is the `schema_tested` of
+`internal/compat/matrix.json`. `f2a7906` was built from the local
+repository's `main`, before it reached GitHub.
 
 | File | Command |
 |---|---|
@@ -32,6 +37,19 @@ tests that load these fixtures also exercise the out-of-range warning.
 `<name>.report.json` is `<out>/report.json`, `<name>.stdout` the terminal
 summary, `<name>.stderr` the `--json` slog records (the last is
 `"msg":"scan result"`).
+
+## Tokvera v1.2.0 (`tokvera-v1.2.0/`)
+
+`flaky.report.json` is the `flaky` report of the earlier fixture (Tokvera
+`b97e278381ee`, schema `tokvera.scan-report/v1.2.0`, before the label and
+note existed), kept for the fallback test (`TestTokveraProvisionalWords`).
+It is trimmed with `jq` to the top-level keys Halotrcer decodes, minus
+`levels`, `checks` and `privacy`, and to its first three findings; no
+value was changed:
+
+```sh
+jq '{schema_version, scoring_version, tool, generated_at, simulated, simulated_timing, target, model, run, cost, pricing, score, findings: .findings[:3]}'
+```
 
 ## Sievant (`sievant-d8a8bcf/`)
 

@@ -1,0 +1,373 @@
+# GoReleaser v2 configuration for Halotrcer (M2, bundle channels).
+#
+# Run only by .github/workflows/release.yml (on a v* tag, then again when the
+# owner publishes the draft); no tag has been pushed. The channel set, naming
+# and two-phase flow are Tokvera's and Sievant's (their .goreleaser.yaml),
+# with which Halotrcer shares the owner, the tap, the bucket, the package
+# repositories and the package-signing key. Every key was checked against
+# `goreleaser jsonschema` of v2.18.3, and each channel's dependency syntax
+# against that channel's own documentation and source (PLAN.md §2 M2).
+# `make release-check` runs `goreleaser check`.
+#
+# Halotrcer is a bundle: every package manager channel declares Tokvera and
+# Sievant as dependencies, so one install command installs all three.
+#
+# Secrets (only ever read by .github/workflows/release.yml, never in a
+# snapshot):
+#   PUBLISHER_TOKEN      push to the Homebrew tap and Scoop bucket, open the
+#                        winget-pkgs pull request, and push the apt and yum
+#                        repositories (rajasatyajit/packages)
+#   PKG_GPG_KEY          written by the workflow to a file whose path is passed
+#                        as PKG_GPG_KEY_FILE (deb/rpm signing)
+#   PKG_GPG_PASSPHRASE   passed to nfpm as NFPM_PASSPHRASE
+#   PKG_APK_KEY          the RSA private key (PEM) that signs the apk packages,
+#                        written to a file whose path is passed as
+#                        PKG_APK_KEY_FILE; its public half is
+#                        packaging/keys/satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub
+#   cosign signs keyless through GitHub OIDC: no key, no secret.
+version: 2
+
+project_name: halotrcer
+
+dist: dist/goreleaser
+
+# Every timestamp in an artifact comes from the commit, not the clock, so
+# rebuilding a tag gives the same archives (the publish phase depends on it).
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+report_sizes: true
+
+builds:
+  - id: halotrcer
+    main: ./cmd/halotrcer
+    binary: halotrcer
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    # main.version and main.commit are the variables cmd/halotrcer/buildinfo.go
+    # declares (`make build` sets the same two); TestGoReleaserConfig checks
+    # they still exist. The tag keeps its leading v.
+    ldflags:
+      - -s -w -X main.version=v{{ .Version }} -X main.commit={{ .ShortCommit }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: halotrcer
+    ids: [halotrcer]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    # The Apache-2.0 LICENSE and the NOTICE travel with every archive, and so
+    # with the cask, Scoop and winget installs, which unpack these archives.
+    files:
+      - src: LICENSE
+        info:
+          mtime: "{{ .CommitDate }}"
+      - src: NOTICE
+        info:
+          mtime: "{{ .CommitDate }}"
+      - src: README.md
+        info:
+          mtime: "{{ .CommitDate }}"
+
+# One checksum file covers every archive and package; it is what the install
+# scripts and `halotrcer install` verify, and what cosign signs.
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+# SPDX SBOM per archive. The arguments are spelled out so syft never runs
+# with `--enrich all`, GoReleaser's default, which makes network lookups.
+sboms:
+  - id: archives
+    artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.spdx.json"
+    cmd: syft
+    args: ["$artifact", "--output", "spdx-json=$document"]
+    env:
+      - SYFT_FILE_METADATA_CATALOGER_ENABLED=true
+      - SYFT_CHECK_FOR_APP_UPDATE=false
+
+# Keyless cosign over the checksum file (a Sigstore bundle): verify with
+#   cosign verify-blob --bundle checksums.txt.sigstore.json \
+#     --certificate-identity-regexp '^https://github\.com/rajasatyajit/halotrcer/\.github/workflows/release\.yml@refs/tags/v' \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com checksums.txt
+# (internal/install.CosignIdentity is the same identity.)
+signs:
+  - id: checksum
+    cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
+
+nfpms:
+  - id: packages
+    ids: [halotrcer]
+    package_name: halotrcer
+    file_name_template: "{{ .ConventionalFileName }}"
+    formats: [deb, rpm, apk]
+    vendor: rajasatyajit
+    homepage: https://github.com/rajasatyajit/halotrcer
+    maintainer: Satyajit Rajaraman <satyajit.rajaraman@halotrcer.com>
+    description: One cost and security check for AI products. Installs and runs Tokvera and Sievant and merges their results into one report.
+    license: Apache-2.0
+    bindir: /usr/bin
+    mtime: "{{ .CommitDate }}"
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/halotrcer/LICENSE
+        file_info:
+          mtime: "{{ .CommitDate }}"
+      - src: NOTICE
+        dst: /usr/share/doc/halotrcer/NOTICE
+        file_info:
+          mtime: "{{ .CommitDate }}"
+      - src: README.md
+        dst: /usr/share/doc/halotrcer/README.md
+        file_info:
+          mtime: "{{ .CommitDate }}"
+    # Tokvera and Sievant inside the compatibility matrix (internal/compat
+    # matrix.json: >=0.2.0 <0.3.0; TestPackageDependenciesMatchMatrix keeps
+    # them equal). nfpm v2.47.0 writes each string unchanged in the format's
+    # own syntax, so each format has its own list, one constraint per entry:
+    # deb `name (op version)` with << for "below" (Debian Policy 7.1), rpm
+    # `name op version` (rpmpack), apk `nameopversion` (apk-world(5)). The
+    # three share the rajasatyajit/packages repositories with both tools
+    # (apk ships as a release asset, as both tools' apks do).
+    overrides:
+      deb:
+        dependencies:
+          - tokvera (>= 0.2.0)
+          - tokvera (<< 0.3.0)
+          - sievant (>= 0.2.0)
+          - sievant (<< 0.3.0)
+      rpm:
+        dependencies:
+          - tokvera >= 0.2.0
+          - tokvera < 0.3.0
+          - sievant >= 0.2.0
+          - sievant < 0.3.0
+      apk:
+        dependencies:
+          - tokvera>=0.2.0
+          - tokvera<0.3.0
+          - sievant>=0.2.0
+          - sievant<0.3.0
+    # Signed only when the release workflow provides the key file; a snapshot
+    # (no PKG_GPG_KEY_FILE) builds unsigned packages.
+    deb:
+      signature:
+        key_file: '{{ if index .Env "PKG_GPG_KEY_FILE" }}{{ .Env.PKG_GPG_KEY_FILE }}{{ end }}'
+    rpm:
+      signature:
+        key_file: '{{ if index .Env "PKG_GPG_KEY_FILE" }}{{ .Env.PKG_GPG_KEY_FILE }}{{ end }}'
+    # apk signs with Halotrcer's own RSA key (owner, 2026-10-21). apk checks
+    # the signature against /etc/apk/keys/<key_name>; nfpm v2.47.0 appends
+    # ".rsa.pub" to a name that does not end in it, so the name is the public
+    # key's file name in full (as both tools do).
+    apk:
+      signature:
+        key_file: '{{ if index .Env "PKG_APK_KEY_FILE" }}{{ .Env.PKG_APK_KEY_FILE }}{{ end }}'
+        key_name: satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub
+
+# Multi-arch, non-root, distroless image with halotrcer, tokvera and sievant.
+# Built and pushed only in the publish phase. The tools' images come from
+# packaging/bundled-tools.env, cosign-verified by the workflow before this
+# runs; without them the Dockerfile's FROM fails (no unpinned build).
+dockers_v2:
+  - id: image
+    ids: [halotrcer]
+    dockerfile: Dockerfile
+    extra_files:
+      - LICENSE
+      - NOTICE
+    build_args:
+      TOKVERA_IMAGE: '{{ index .Env "TOKVERA_IMAGE" }}'
+      SIEVANT_IMAGE: '{{ index .Env "SIEVANT_IMAGE" }}'
+    images:
+      - ghcr.io/rajasatyajit/halotrcer
+    tags:
+      - "v{{ .Version }}"
+      - '{{ if not .Prerelease }}latest{{ end }}'
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    sbom: "true"
+    labels:
+      org.opencontainers.image.title: halotrcer
+      org.opencontainers.image.description: One cost and security check for AI products (Halotrcer, Tokvera and Sievant)
+      org.opencontainers.image.source: https://github.com/rajasatyajit/halotrcer
+      org.opencontainers.image.version: "v{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.created: "{{ .CommitDate }}"
+      org.opencontainers.image.licenses: Apache-2.0
+
+docker_signs:
+  - id: image
+    cmd: cosign
+    args:
+      - sign
+      - "${artifact}@${digest}"
+      - "--yes"
+
+homebrew_casks:
+  - name: halotrcer
+    ids: [halotrcer]
+    binaries: [halotrcer]
+    description: One cost and security check for AI products (Tokvera and Sievant).
+    homepage: https://github.com/rajasatyajit/halotrcer
+    license: Apache-2.0
+    directory: Casks
+    # Both tools' casks, fully qualified: Homebrew loads a tap/token
+    # dependency from that tap (already installed, since halotrcer comes from
+    # it), and an unqualified token could match another tap. Cask
+    # dependencies take no version (Cask Cookbook, depends_on);
+    # `halotrcer doctor` warns outside the compatibility matrix.
+    dependencies:
+      - cask: rajasatyajit/tap/tokvera
+      - cask: rajasatyajit/tap/sievant
+    # Spelled out because the publish phase turns the GitHub release off and
+    # GoReleaser then refuses to derive it (both tools' configs); the same
+    # template sits on scoops and winget.
+    url:
+      template: "https://github.com/rajasatyajit/halotrcer/releases/download/{{ urlPathEscape .Tag }}/{{ .ArtifactName }}"
+    # A release candidate (a -rc.N tag) is never offered here.
+    skip_upload: auto
+    commit_msg_template: "halotrcer {{ .Tag }}"
+    repository:
+      owner: rajasatyajit
+      name: homebrew-tap
+      token: '{{ index .Env "PUBLISHER_TOKEN" }}'
+    # Not Apple-notarized: the same quarantine handling and wording as both
+    # tools' casks (their owner decision for this channel).
+    caveats: |
+      The halotrcer binary is not notarized by Apple. This cask removes macOS's
+      quarantine flag from that one binary after Homebrew has checked the
+      archive's SHA-256 against the cask. Tokvera and Sievant are installed
+      from their own casks, with their own notes.
+
+      To check the release signature yourself (needs cosign):
+        curl -fsSLO https://github.com/rajasatyajit/halotrcer/releases/download/{{ .Tag }}/checksums.txt
+        curl -fsSLO https://github.com/rajasatyajit/halotrcer/releases/download/{{ .Tag }}/checksums.txt.sigstore.json
+        cosign verify-blob --bundle checksums.txt.sigstore.json \
+          --certificate-identity-regexp '^https://github\.com/rajasatyajit/halotrcer/\.github/workflows/release\.yml@refs/tags/v' \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+          checksums.txt
+      Then compare your archive's SHA-256 with its line in checksums.txt.
+      Next: halotrcer check --target <inference-url>
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/halotrcer"]
+          end
+
+scoops:
+  - name: halotrcer
+    ids: [halotrcer]
+    description: One cost and security check for AI products (Tokvera and Sievant).
+    homepage: https://github.com/rajasatyajit/halotrcer
+    license: Apache-2.0
+    # bucket/app: Scoop installs each from the named bucket, which is the one
+    # users add as `rajasatyajit` (Scoop lib/core.ps1 parse_app,
+    # lib/depends.ps1). Scoop dependencies take no version.
+    depends:
+      - rajasatyajit/tokvera
+      - rajasatyajit/sievant
+    url_template: "https://github.com/rajasatyajit/halotrcer/releases/download/{{ urlPathEscape .Tag }}/{{ .ArtifactName }}"
+    skip_upload: auto
+    commit_msg_template: "halotrcer {{ .Tag }}"
+    repository:
+      owner: rajasatyajit
+      name: scoop-bucket
+      token: '{{ index .Env "PUBLISHER_TOKEN" }}'
+
+# winget: a manifest committed to the owner's fork of microsoft/winget-pkgs
+# and proposed as a pull request; Microsoft's reviewers merge it. Manifest
+# schema 1.12.0 (GoReleaser v2.18.3). Dependencies must come from the same
+# source and already exist in the catalog (winget-pkgs doc/Validation.md), so
+# Tokvera's and Sievant's manifests must be merged before this pull request
+# (docs/releasing.md). The schema has a minimum version only.
+winget:
+  - name: halotrcer
+    ids: [halotrcer]
+    package_identifier: Halotrcer.Halotrcer
+    package_name: Halotrcer
+    publisher: Halotrcer
+    publisher_url: https://www.halotrcer.com
+    publisher_support_url: https://www.halotrcer.com
+    copyright: Copyright 2026 Satyajit Rajaraman / Halotrcer
+    short_description: One cost and security check for AI products (Tokvera and Sievant).
+    homepage: https://github.com/rajasatyajit/halotrcer
+    license: Apache-2.0
+    license_url: https://github.com/rajasatyajit/halotrcer/blob/main/LICENSE
+    release_notes_url: "https://github.com/rajasatyajit/halotrcer/releases/tag/{{ .Tag }}"
+    url_template: "https://github.com/rajasatyajit/halotrcer/releases/download/{{ urlPathEscape .Tag }}/{{ .ArtifactName }}"
+    tags: [cli, llm, inference, cost, mcp, security]
+    dependencies:
+      - package_identifier: Halotrcer.Tokvera
+        minimum_version: 0.2.0
+      - package_identifier: Halotrcer.Sievant
+        minimum_version: 0.2.0
+    commit_msg_template: "New version: Halotrcer.Halotrcer {{ .Version }}"
+    skip_upload: auto
+    repository:
+      owner: rajasatyajit
+      name: winget-pkgs
+      branch: "halotrcer-{{ .Version }}"
+      token: '{{ index .Env "PUBLISHER_TOKEN" }}'
+      pull_request:
+        enabled: true
+        draft: false
+        base:
+          owner: microsoft
+          name: winget-pkgs
+          branch: master
+
+# A tag produces a DRAFT release, which the owner reads and publishes by hand.
+# .github/workflows/release.yml runs this config twice. The draft phase
+# uploads the draft and skips docker, homebrew, scoop and winget, so nothing
+# public moves before the owner has read it. The publish phase sets
+# RELEASE_PHASE=publish, which turns this GitHub release off; it rebuilds
+# (the archives are reproducible), checks every archive against the
+# published checksums.txt, then pushes the image, the cask, the Scoop
+# manifest and the winget pull request.
+release:
+  disable: '{{ if eq (index .Env "RELEASE_PHASE") "publish" }}true{{ else }}false{{ end }}'
+  github:
+    owner: rajasatyajit
+    name: halotrcer
+  draft: true
+  prerelease: auto
+  mode: replace
+
+changelog:
+  use: git
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Fixes and security
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - "^docs"
+      - "^test"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-snapshot-{{ .ShortCommit }}"

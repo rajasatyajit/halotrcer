@@ -133,13 +133,17 @@ type TokveraFinding struct {
 // TokveraScore is the Efficiency Score. Grade is A-F or
 // "insufficient_evidence"; Points is nil without a grade.
 type TokveraScore struct {
-	ScoringVersion string       `json:"scoring_version"`
-	Provisional    bool         `json:"provisional"`
-	Grade          string       `json:"grade"`
-	Reason         string       `json:"reason"`
-	Points         *float64     `json:"points"`
-	UncappedGrade  string       `json:"uncapped_grade"`
-	CapsApplied    []TokveraCap `json:"caps_applied"`
+	ScoringVersion string `json:"scoring_version"`
+	Provisional    bool   `json:"provisional"`
+	// The words Tokvera shows beside a provisional grade, carried in the
+	// report from schema v1.3.0 (tokvera pkg/score/score.go); absent before.
+	ProvisionalLabel string       `json:"provisional_label"`
+	ProvisionalNote  string       `json:"provisional_note"`
+	Grade            string       `json:"grade"`
+	Reason           string       `json:"reason"`
+	Points           *float64     `json:"points"`
+	UncappedGrade    string       `json:"uncapped_grade"`
+	CapsApplied      []TokveraCap `json:"caps_applied"`
 }
 
 // TokveraCap is a cap that bound the grade.

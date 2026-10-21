@@ -21,6 +21,9 @@ func TestEmbeddedMatrix(t *testing.T) {
 			t.Errorf("%s: bad range %q..%q", name, tool.Min, tool.Below)
 		}
 	}
+	if tok := m.Tools["tokvera"]; m.CheckTokveraSchema(tok.SchemaTested) != nil || !strings.HasPrefix(tok.SchemaTested, tok.SchemaPrefix) {
+		t.Errorf("tokvera: schema_tested %q is not a schema this release reads", tok.SchemaTested)
+	}
 }
 
 func TestCheckRange(t *testing.T) {

@@ -84,7 +84,10 @@ go test ./internal/report -update   # rewrite the report goldens; the diff is th
 - `permissions: contents: read` at the top level (`release.yml`: `{}`, plus per-job grants). Every checkout uses `persist-credentials: false`.
 - Every downloaded tool is checksum-verified (`echo "<sha>  <file>" | sha256sum -c -`).
 - Go comes from go.mod's toolchain line, with `GOTOOLCHAIN=local`.
-- Jobs run on `ubuntu-24.04`. `ubuntu-latest` appears only in the smoke matrix, deliberately.
+- Linux jobs run on `${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}` and install what they need themselves. On a self-hosted runner, each job first runs `scripts/ci/runner-tools.sh` with the tools docs/development.md lists for it (`TestSelfHostedRunnerRules`).
+  - `release.yml` always runs on `ubuntu-24.04`: a release runs only on the public repository, and its provenance is verified with `--deny-self-hosted-runners`.
+  - Never use a self-hosted runner on a public repository; the expression enforces it.
+  - `ubuntu-latest` appears only in the smoke matrix, deliberately. The macOS, Windows and arm64 jobs keep their GitHub-hosted runners.
 - An action's inputs reach scripts only through `env:`, never as `${{ }}` inside `run:`.
 
 ## Release (milestones 2 to 4)

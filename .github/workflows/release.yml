@@ -1,0 +1,453 @@
+name: release
+
+# The tag-triggered release (M2; PLAN.md §2), in Tokvera's and Sievant's
+# two-phase structure, with SLSA build provenance. BUILT AND VALIDATED, NEVER
+# RUN: no tag has been pushed. Its file name is fixed: the cosign identity in
+# .goreleaser.yaml, internal/install, the install scripts and the cask caveats
+# all name `.github/workflows/release.yml@refs/tags/v…`.
+#
+#   1. draft (a v* tag is pushed): preflight and the gates, read-only; then
+#      GoReleaser builds, signs the packages, cosign-signs checksums.txt
+#      (keyless), writes the SBOMs and uploads a DRAFT release, skipping
+#      docker, homebrew, scoop and winget; then SLSA provenance for every
+#      file in checksums.txt, its bundle attached to the draft.
+#   2. publish (the owner publishes the draft): the published checksums.txt
+#      is cosign-verified; Tokvera's and Sievant's images and charts pinned in
+#      packaging/bundled-tools.env are verified again (as in the draft's
+#      preflight: media type, then cosign against their exact release
+#      identities) and the umbrella chart is built from them; the release is rebuilt with the GitHub release
+#      off (RELEASE_PHASE=publish) and every archive must be byte-identical
+#      to the published one and carry phase 1's provenance; then GoReleaser
+#      pushes the image (the three binaries), the cask, the Scoop manifest and
+#      the winget pull request; then the image's provenance; then the
+#      umbrella chart with both tools' verified charts vendored, pushed to
+#      oci://ghcr.io/rajasatyajit/charts, signed and attested; then, for a
+#      stable tag only, the published deb and rpm packages go into the signed
+#      apt and yum repositories on rajasatyajit/packages gh-pages, shared with
+#      Tokvera and Sievant (packages are added, nothing is removed).
+#
+# The repository must be public (preflight refuses otherwise). Both
+# privileged jobs run in the `release` environment, where the owner is the
+# required reviewer. docs/releasing.md has the steps.
+
+on:
+  push:
+    tags: ["v*"]
+  release:
+    types: [published]
+
+permissions: {}
+
+env:
+  GOTOOLCHAIN: local # exactly the Go set up from go.mod's toolchain line
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Phase 1, read-only: refuse early, and run the gates without a write token.
+  draft-preflight:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the tag must be on origin/main; GoReleaser reads tags
+      - name: Preflight
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO_PRIVATE: ${{ github.event.repository.private }}
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_GPG_PASSPHRASE: ${{ secrets.PKG_GPG_PASSPHRASE }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/preflight.sh draft "$TAG"
+      - name: The signing keys match packaging/keys/
+        env:
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/write-keys.sh --check
+      - name: Go version from go.mod's toolchain line
+        id: go
+        run: |
+          v=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2 }' go.mod)
+          test -n "$v" || { echo "go.mod has no toolchain line"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache: false
+      - name: Install PDF checkers
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq qpdf poppler-utils
+      # helm (the umbrella chart, and its packaging test in make test) and
+      # oras (the bundled charts), at both tools' pins.
+      - name: Install helm and oras
+        env:
+          HELM_VERSION: 4.3.0
+          HELM_SHA256: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
+          ORAS_VERSION: 1.3.4
+          ORAS_SHA256: f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/charttools"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSLo "$f" "https://get.helm.sh/$f"
+          echo "${HELM_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" --strip-components=1 linux-amd64/helm
+          f="oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/$f"
+          echo "${ORAS_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" oras
+          echo "$dir" >> "$GITHUB_PATH"
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      # The pinned Tokvera and Sievant images and charts are verified, and the
+      # umbrella chart is built from them, before the draft exists: a wrong
+      # pin, or a tool chart that cannot be a subchart, stops the release
+      # here rather than after the owner has published the draft.
+      - name: The bundled Tokvera and Sievant artifacts verify, and the chart builds from them
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          sh scripts/release/bundled-tools.sh > "$RUNNER_TEMP/bundled.env"
+          sh scripts/release/verify-bundled.sh "$RUNNER_TEMP/bundled.env"
+          sh scripts/release/bundled-chart.sh "$RUNNER_TEMP/bundled.env" "$TAG" "$RUNNER_TEMP/chart"
+      # The ci.yml gates that need no extra tool, at the tagged commit, with
+      # no write token.
+      - name: Gates (at the tagged commit)
+        run: |
+          set -euo pipefail
+          make toolchain-check
+          make vet
+          make test
+          make vuln
+
+  draft:
+    needs: draft-preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: release
+    permissions:
+      contents: write # create the draft release and upload to it
+      id-token: write # keyless cosign and the provenance signature
+      attestations: write # store the provenance attestation
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Go version from go.mod's toolchain line
+        id: go
+        run: |
+          v=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2 }' go.mod)
+          test -n "$v" || { echo "go.mod has no toolchain line"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache: false # a release builds from a clean module cache
+      # GoReleaser and syft at both tools' pins, verified against their
+      # published checksums.
+      - name: Install goreleaser
+        env:
+          GORELEASER_VERSION: 2.18.3
+          GORELEASER_SHA256: b8dee4728bca1aba0d71a832a17cd0a3799f75372878e7ffa36aef2343bce0bc
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/goreleaser"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f=goreleaser_Linux_x86_64.tar.gz
+          curl -fsSLo "$f" "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/$f"
+          echo "${GORELEASER_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" goreleaser
+          echo "$dir" >> "$GITHUB_PATH"
+      - name: Install syft
+        env:
+          SYFT_VERSION: 1.54.1
+          SYFT_SHA256: c069905b391cc4c20a5ba65ad5c10be2a7ba074f8ea6ad203e24d14e303dad47
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/syft"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f="syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/$f"
+          echo "${SYFT_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" syft
+          echo "$dir" >> "$GITHUB_PATH"
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Check the config and the toolchain
+        run: |
+          set -euo pipefail
+          goreleaser check
+          make toolchain-check
+      - name: Write the package-signing keys
+        env:
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/write-keys.sh "$RUNNER_TEMP/keys" >> "$GITHUB_ENV"
+      - name: Build, sign and upload the draft release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NFPM_PASSPHRASE: ${{ secrets.PKG_GPG_PASSPHRASE }}
+          # The tag that triggered the run, even if another tag shares its commit.
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+        run: goreleaser release --clean --skip=docker,homebrew,scoop,winget
+      - name: Remove the signing keys
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"
+      # SLSA v1 build provenance: one attestation naming every archive,
+      # package and SBOM in checksums.txt as a subject.
+      - name: Build provenance
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: dist/goreleaser/checksums.txt
+      - name: Attach the provenance bundle to the draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/halotrcer_${TAG#v}_provenance.sigstore.json"
+          cp "$BUNDLE" "$out"
+          gh release upload "$TAG" "$out" --repo "$GITHUB_REPOSITORY"
+
+  # Phase 2, read-only: refuse early.
+  publish-preflight:
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Preflight
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          REPO_PRIVATE: ${{ github.event.repository.private }}
+          PUBLISHER_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_GPG_PASSPHRASE: ${{ secrets.PKG_GPG_PASSPHRASE }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/preflight.sh publish "$TAG"
+      # The OpenPGP key signs the apt and yum repositories in this phase.
+      - name: The signing keys match packaging/keys/
+        env:
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/write-keys.sh --check
+
+  publish:
+    needs: publish-preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: release
+    # One publish of this repository at a time touches the shared package
+    # repositories. A concurrency group cannot reach Tokvera's or Sievant's
+    # workflows (groups are per repository), so publish-repos.sh also starts
+    # over from the new gh-pages tip, up to 3 times, when a push is refused
+    # because the branch moved.
+    concurrency:
+      group: packages-gh-pages
+      cancel-in-progress: false
+    permissions:
+      contents: read # download the published checksums.txt
+      packages: write # push the image and the chart to ghcr.io
+      id-token: write # keyless cosign on the image and chart, and their provenance
+      attestations: write # store the image's and chart's provenance
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      GORELEASER_CURRENT_TAG: ${{ github.event.release.tag_name }}
+      RELEASE_PHASE: publish
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Go version from go.mod's toolchain line
+        id: go
+        run: |
+          v=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2 }' go.mod)
+          test -n "$v" || { echo "go.mod has no toolchain line"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache: false
+      - name: Install goreleaser
+        env:
+          GORELEASER_VERSION: 2.18.3
+          GORELEASER_SHA256: b8dee4728bca1aba0d71a832a17cd0a3799f75372878e7ffa36aef2343bce0bc
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/goreleaser"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f=goreleaser_Linux_x86_64.tar.gz
+          curl -fsSLo "$f" "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/$f"
+          echo "${GORELEASER_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" goreleaser
+          echo "$dir" >> "$GITHUB_PATH"
+      # helm and oras at both tools' pins, verified against their checksums.
+      - name: Install helm and oras
+        env:
+          HELM_VERSION: 4.3.0
+          HELM_SHA256: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
+          ORAS_VERSION: 1.3.4
+          ORAS_SHA256: f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/charttools"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSLo "$f" "https://get.helm.sh/$f"
+          echo "${HELM_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" --strip-components=1 linux-amd64/helm
+          f="oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/$f"
+          echo "${ORAS_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" oras
+          echo "$dir" >> "$GITHUB_PATH"
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      # A builder that makes multi-platform images. The Dockerfile only copies
+      # prebuilt binaries, so no emulation is needed.
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # The identity is the one internal/install, the install scripts and the
+      # cask caveats give users (TestReleaseWorkflow keeps them equal).
+      - name: Verify the published checksums.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/published"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$dir" \
+            --pattern checksums.txt --pattern checksums.txt.sigstore.json
+          cosign verify-blob --bundle "$dir/checksums.txt.sigstore.json" \
+            --certificate-identity-regexp '^https://github\.com/rajasatyajit/halotrcer/\.github/workflows/release\.yml@refs/tags/v' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            "$dir/checksums.txt"
+      # Tokvera's and Sievant's released images and charts, pinned by digest
+      # in packaging/bundled-tools.env, each verified against the exact
+      # identity of the release run of its pinned tag (that tool's
+      # release.yml publish job signed both). Nothing is built from them
+      # before this passes.
+      - name: Verify the bundled Tokvera and Sievant artifacts
+        run: |
+          set -euo pipefail
+          sh scripts/release/bundled-tools.sh > "$RUNNER_TEMP/bundled.env"
+          sh scripts/release/verify-bundled.sh "$RUNNER_TEMP/bundled.env"
+          # TOKVERA_IMAGE and SIEVANT_IMAGE are the Dockerfile's build arguments.
+          cat "$RUNNER_TEMP/bundled.env" >> "$GITHUB_ENV"
+      # Built before anything is published, pushed after the other channels.
+      - name: Package the Helm chart
+        run: sh scripts/release/bundled-chart.sh "$RUNNER_TEMP/bundled.env" "$TAG" "$RUNNER_TEMP/chart"
+      - name: Rebuild, publishing nothing
+        run: goreleaser release --clean --skip=publish,docker,nfpm,sbom,sign
+      - name: Every archive is the published one, with phase 1's provenance
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          sh scripts/release/compare-archives.sh dist/goreleaser/checksums.txt "$RUNNER_TEMP/published/checksums.txt"
+          for f in dist/goreleaser/*.tar.gz dist/goreleaser/*.zip; do
+            gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-ref "refs/tags/$TAG" --deny-self-hosted-runners
+          done
+      - name: Publish the image, the Homebrew cask, the Scoop manifest and the winget pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISHER_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
+        run: |
+          set -euo pipefail
+          goreleaser release --clean --skip=nfpm,sbom
+          # What was just pushed was built from these archives.
+          sh scripts/release/compare-archives.sh dist/goreleaser/checksums.txt "$RUNNER_TEMP/published/checksums.txt"
+      - name: The image digest
+        id: image
+        run: echo "digest=$(sh scripts/release/image-subject.sh dist/goreleaser/artifacts.json ghcr.io/rajasatyajit/halotrcer)" >> "$GITHUB_OUTPUT"
+      # Storage records are for organization-owned repositories only.
+      - name: Image provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/rajasatyajit/halotrcer
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: false
+      # The umbrella chart, in this phase only, with both tools' charts
+      # vendored by the digests verified above (helm resolves nothing
+      # itself): pushed, signed and attested like both tools' charts.
+      - name: Push the Helm chart
+        id: chart
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          printf '%s' "$GITHUB_TOKEN" | helm registry login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          digest="$(sh scripts/release/push-chart.sh "$RUNNER_TEMP/chart/halotrcer-${TAG#v}.tgz" oci://ghcr.io/rajasatyajit/charts)"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          cosign sign --yes "ghcr.io/rajasatyajit/charts/halotrcer@$digest"
+      - name: Chart provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/rajasatyajit/charts/halotrcer
+          subject-digest: ${{ steps.chart.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: false
+      # Artifact Hub reads an OCI chart repository's metadata from its
+      # artifacthub.io tag.
+      - name: Artifact Hub metadata
+        run: |
+          set -euo pipefail
+          (cd charts && oras push ghcr.io/rajasatyajit/charts/halotrcer:artifacthub.io \
+            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
+            artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml)
+      # The signed apt and yum repositories on rajasatyajit/packages gh-pages.
+      # A release candidate never enters them: they have one channel, and
+      # apt/dnf would offer it as the newest version. They carry the
+      # PUBLISHED packages (the rebuild makes none: a package signature
+      # carries a time), each checked against the cosign-verified
+      # checksums.txt and phase 1's provenance before it is added.
+      - name: The published packages, verified
+        if: ${{ !contains(github.event.release.tag_name, '-') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/packages"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$dir" --pattern '*.deb' --pattern '*.rpm'
+          sums="$RUNNER_TEMP/packages.sha256"
+          grep -E '^[0-9a-f]{64}  [^ ]+\.(deb|rpm)$' "$RUNNER_TEMP/published/checksums.txt" > "$sums"
+          test "$(wc -l < "$sums")" -eq "$(find "$dir" -type f | wc -l)"
+          (cd "$dir" && sha256sum --check --strict "$sums")
+          for f in "$dir"/*; do
+            gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-ref "refs/tags/$TAG" --deny-self-hosted-runners
+          done
+      - name: Write the repository signing key
+        if: ${{ !contains(github.event.release.tag_name, '-') }}
+        env:
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/write-keys.sh "$RUNNER_TEMP/keys" >> "$GITHUB_ENV"
+      - name: Publish the signed apt and yum repositories
+        if: ${{ !contains(github.event.release.tag_name, '-') }}
+        env:
+          PUBLISHER_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
+          REPO_GPG_PASSPHRASE: ${{ secrets.PKG_GPG_PASSPHRASE }}
+          REPO_GPG_PUB: packaging/keys/halotrcer-packages.asc
+          REPO_PUSH_ATTEMPTS: "3"
+        run: REPO_GPG_KEY_FILE="$PKG_GPG_KEY_FILE" sh scripts/release/publish-repos.sh "$TAG" "$RUNNER_TEMP/packages"
+      - name: Remove the signing keys
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"

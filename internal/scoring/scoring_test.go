@@ -134,7 +134,7 @@ func TestMonthlySpend(t *testing.T) {
 
 func TestFixtures(t *testing.T) {
 	m := compat.Load()
-	f, err := os.Open("../../testdata/fixtures/tokvera-b97e278/demo.report.json")
+	f, err := os.Open("../../testdata/fixtures/tokvera-f2a7906/demo.report.json")
 	if err != nil {
 		t.Fatal(err)
 	}

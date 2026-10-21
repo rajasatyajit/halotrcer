@@ -73,26 +73,26 @@ BT 0 0 0 rg /F2 8.5 Tf 448 198.14 Td (Duration p95) Tj ET
 BT 0 0 0 rg /F1 8.5 Tf 48 185.14 Td (1) Tj ET
 BT 0 0 0 rg /F1 8.5 Tf 118 185.14 Td (8) Tj ET
 BT 0 0 0 rg /F1 8.5 Tf 183 185.14 Td (0) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 238 185.14 Td (35.8 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 308 185.14 Td (36.7 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 378 185.14 Td (36.7 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 448 185.14 Td (98.2 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 238 185.14 Td (35.9 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 308 185.14 Td (38.2 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 378 185.14 Td (38.2 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 448 185.14 Td (99.1 ms) Tj ET
 0.85 0.87 0.89 RG 0.4 w 48 182.14 m 547.28 182.14 l S
 BT 0 0 0 rg /F1 8.5 Tf 48 172.14 Td (2) Tj ET
 BT 0 0 0 rg /F1 8.5 Tf 118 172.14 Td (8) Tj ET
 BT 0 0 0 rg /F1 8.5 Tf 183 172.14 Td (0) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 238 172.14 Td (36.1 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 308 172.14 Td (36.9 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 378 172.14 Td (36.9 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 448 172.14 Td (98.2 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 238 172.14 Td (35.8 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 308 172.14 Td (36.0 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 378 172.14 Td (36.0 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 448 172.14 Td (97.0 ms) Tj ET
 0.85 0.87 0.89 RG 0.4 w 48 169.14 m 547.28 169.14 l S
 BT 0 0 0 rg /F1 8.5 Tf 48 159.14 Td (4) Tj ET
 BT 0 0 0 rg /F1 8.5 Tf 118 159.14 Td (8) Tj ET
 BT 0 0 0 rg /F1 8.5 Tf 183 159.14 Td (0) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 238 159.14 Td (36.3 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 308 159.14 Td (36.4 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 378 159.14 Td (36.4 ms) Tj ET
-BT 0 0 0 rg /F1 8.5 Tf 448 159.14 Td (98.5 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 238 159.14 Td (35.9 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 308 159.14 Td (36.0 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 378 159.14 Td (36.0 ms) Tj ET
+BT 0 0 0 rg /F1 8.5 Tf 448 159.14 Td (96.8 ms) Tj ET
 0.85 0.87 0.89 RG 0.4 w 48 156.14 m 547.28 156.14 l S
 BT 0 0 0 rg /F2 11.5 Tf 48 137.49 Td (Cost) Tj ET
 BT 0 0 0 rg /F1 9.5 Tf 48 122.17 Td ($0.0475 per 1,000 requests \(estimate\), rates as of 2026-10-20, source: halotrcer fixture \(synthetic rate, not a real) Tj ET

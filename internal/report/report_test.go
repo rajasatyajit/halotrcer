@@ -18,7 +18,10 @@ import (
 
 var update = flag.Bool("update", false, "rewrite the golden files")
 
-const fixtures = "../../testdata/fixtures"
+const (
+	fixtures       = "../../testdata/fixtures"
+	tokveraFixture = "tokvera-f2a7906"
+)
 
 var fixedNow = time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
 
@@ -29,7 +32,11 @@ func load(t *testing.T, tokFile, svFile, gwFile string) (*ingest.TokveraReport, 
 	var sv *ingest.SievantScan
 	var gw *ingest.SievantGateway
 	if tokFile != "" {
-		b, err := os.ReadFile(filepath.Join(fixtures, "tokvera-b97e278", tokFile))
+		// A bare name is in the current fixture; dir/name is another one.
+		if !strings.Contains(tokFile, "/") {
+			tokFile = filepath.Join(tokveraFixture, tokFile)
+		}
+		b, err := os.ReadFile(filepath.Join(fixtures, tokFile))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -264,5 +271,65 @@ func TestUSD(t *testing.T) {
 		if got := usd(in); got != want {
 			t.Errorf("usd(%v) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// TestTokveraProvisionalWords: from schema v1.3.0 Tokvera's report.json
+// carries the label and note, and the combined report shows those words in
+// every format; an older v1.x report (score.provisional only, the trimmed
+// v1.2.0 fixture) gets the documented copy; a grade that is not provisional
+// shows neither.
+func TestTokveraProvisionalWords(t *testing.T) {
+	tok, sv, _ := load(t, "flaky.report.json", "scan-all.json", "")
+	if tok.SchemaVersion != "tokvera.scan-report/v1.3.0" || tok.Score.ProvisionalLabel == "" || tok.Score.ProvisionalNote == "" {
+		t.Fatalf("the current fixture lacks the v1.3.0 label and note: %s %+v", tok.SchemaVersion, tok.Score)
+	}
+	// Distinct words, so the test sees whose words reach the output.
+	newer := *tok
+	newer.Score.ProvisionalLabel = "Label from report.json"
+	newer.Score.ProvisionalNote = "Note from report.json."
+	r := Build(inputs(&newer, sv, nil))
+	if c := r.CostPerformance; c.ProvisionalLabel != "Label from report.json" || c.ProvisionalNote != "Note from report.json." {
+		t.Errorf("v1.3.0: label %q note %q", c.ProvisionalLabel, c.ProvisionalNote)
+	}
+	var html, js bytes.Buffer
+	if err := r.WriteHTML(&html); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.WriteJSON(&js); err != nil {
+		t.Fatal(err)
+	}
+	for name, out := range map[string]string{"html": html.String(), "json": js.String()} {
+		if !strings.Contains(out, "Label from report.json") || !strings.Contains(out, "Note from report.json.") {
+			t.Errorf("%s does not show the report's own words", name)
+		}
+		if strings.Contains(out, TokveraProvisionalNote) {
+			t.Errorf("%s shows the fallback note although the report carries one", name)
+		}
+	}
+
+	if r := Build(inputs(tok, sv, nil)); r.CostPerformance.ProvisionalLabel != tok.Score.ProvisionalLabel || r.CostPerformance.ProvisionalNote != tok.Score.ProvisionalNote {
+		t.Errorf("v1.3.0 fixture: the report's own words are not carried: %+v", r.CostPerformance)
+	}
+
+	old, _, _ := load(t, "tokvera-v1.2.0/flaky.report.json", "", "")
+	if old.SchemaVersion != "tokvera.scan-report/v1.2.0" || !old.Score.Provisional || old.Score.ProvisionalLabel != "" {
+		t.Fatalf("the v1.2.0 fixture is not an older provisional report: %s %+v", old.SchemaVersion, old.Score)
+	}
+	r = Build(inputs(old, sv, nil))
+	if c := r.CostPerformance; c.ProvisionalLabel != TokveraProvisionalLabel || c.ProvisionalNote != TokveraProvisionalNote {
+		t.Errorf("v1.2.0 fallback: label %q note %q", c.ProvisionalLabel, c.ProvisionalNote)
+	}
+
+	final := *tok
+	final.Score.Provisional = false
+	final.Score.ProvisionalLabel, final.Score.ProvisionalNote = "", ""
+	r = Build(inputs(&final, sv, nil))
+	html.Reset()
+	if err := r.WriteHTML(&html); err != nil {
+		t.Fatal(err)
+	}
+	if c := r.CostPerformance; c.ProvisionalLabel != "" || c.ProvisionalNote != "" || strings.Contains(html.String(), TokveraProvisionalLabel) {
+		t.Errorf("a final grade shows a provisional label: %+v", c)
 	}
 }

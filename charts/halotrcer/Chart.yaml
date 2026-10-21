@@ -1,0 +1,44 @@
+apiVersion: v2
+name: halotrcer
+description: >-
+  Halotrcer's umbrella chart: Tokvera (scheduled LLM inference cost and
+  latency scans) and Sievant (the MCP security gateway) from their own
+  released charts, each switched on separately.
+type: application
+# The release workflow sets both to the release version when it packages the
+# chart (helm package --version/--app-version); these are placeholders.
+version: 0.0.0-dev
+appVersion: 0.0.0-dev
+home: https://github.com/rajasatyajit/halotrcer
+sources:
+  - https://github.com/rajasatyajit/halotrcer
+keywords: [llm, inference, cost, latency, mcp, security, gateway]
+maintainers:
+  - name: Halotrcer
+    url: https://www.halotrcer.com
+# The two tools' released charts, each switched on by its tag
+# (tags.tokvera, tags.sievant). Not `condition: <tool>.enabled`: that key
+# would reach the subchart's values, and both tools' values.schema.json
+# refuse unknown keys. The versions are placeholders:
+# scripts/release/package-chart.sh sets each to the version
+# packaging/bundled-tools.env pins and vendors that chart, fetched by digest
+# and cosign-verified, into charts/ (helm never resolves them itself).
+dependencies:
+  - name: tokvera
+    version: 0.0.0-dev
+    repository: oci://ghcr.io/rajasatyajit/charts
+    tags: [tokvera]
+  - name: sievant
+    version: 0.0.0-dev
+    repository: oci://ghcr.io/rajasatyajit/charts
+    tags: [sievant]
+annotations:
+  licenses: Apache-2.0
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/rajasatyajit/halotrcer
+    - name: Tokvera chart
+      url: https://github.com/rajasatyajit/tokvera/tree/main/deploy/helm/tokvera
+    - name: Sievant chart
+      url: https://github.com/rajasatyajit/sievant/tree/main/charts/sievant

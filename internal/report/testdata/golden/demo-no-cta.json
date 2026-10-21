@@ -126,7 +126,7 @@
     "reliability_concern": "Tokvera graded this endpoint D"
   },
   "cost_performance": {
-    "target": "http://127.0.0.1:38409/v1",
+    "target": "http://127.0.0.1:44047/v1",
     "model": "tokvera-sim-demo",
     "simulated": true,
     "simulated_timing": true,
@@ -134,6 +134,7 @@
     "points": 60.8,
     "scoring_version": "0.9.0",
     "provisional": true,
+    "provisional_label": "Provisional scoring",
     "provisional_note": "The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0.",
     "caps": [
       "capped at D: more than 5% of requests failed",

@@ -9,7 +9,7 @@ Halotrcer installs and runs two separately released tools and merges their resul
 
 This repository never copies or changes their code. It depends only on their released binaries and their documented JSON. Every fact about the tools below was read from those repositories at Tokvera `b97e278` and Sievant `d8a8bcf` (2026-10-20), and is cited by file. Anything not confirmed there is marked **VERIFY**.
 
-Status: decisions taken (§1); M1 in progress on `m1-cli`.
+Status: M1 merged (2026-10-20); I1–I5 approved (2026-10-21); M2 in progress on `m2-channels`.
 
 ## 0. Where the brief and the repositories disagree
 
@@ -53,13 +53,13 @@ These change the design. The brief's wording is kept in the requirements below w
   - Image `ghcr.io/rajasatyajit/halotrcer`; chart `oci://ghcr.io/rajasatyajit/charts/halotrcer`.
   - apk key `satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub`.
 - **D11:** the NOTICE copyright line is "Satyajit Rajaraman / Halotrcer".
-- **C12:** `toolchain go1.27.2`, golangci-lint v2.14.0, govulncheck v1.9.0, actionlint v1.7.12 and gitleaks v8.30.1. Each was checked against its upstream release page on 2026-10-20.
+- **C12:** `toolchain go1.27.2`, golangci-lint v2.14.0, govulncheck v1.9.0, actionlint v1.7.12 and gitleaks v8.30.1. Each was checked against its upstream release page on 2026-10-20. **2026-10-21:** toolchain go1.27.3 (go.dev/dl), because govulncheck reports GO-2026-6809 (crypto/x509, fixed in go1.27.3) under go1.27.2. Confirmed by the owner (2026-10-21); Tokvera still pins go1.27.2.
 
-### Implementation decisions taken in M1 (for review)
+### Implementation decisions taken in M1 (approved 2026-10-21)
 
 - **I1: the install channel follows D5.** A tool that is already installed is upgraded through the channel that owns it. Ownership is detected from a brew Caskroom path, the scoop and winget directories, dpkg/rpm/apk file ownership, or GOBIN, as `tokvera doctor` reports install kinds. A fresh install uses brew on macOS, then scoop and winget on Windows, when present: none of them needs root. Otherwise it uses the direct verified download. apt, dnf and apk are never the default. On Linux they are almost always present, so choosing them would turn every `halotrcer install` into printed commands; they are used only when they already own the tool, or with `--via`, and then their commands are printed (D5).
 - **I2: `check` keeps Tokvera's confirmation.** Tokvera refuses to send load without a terminal unless `--yes` is given. `halotrcer check` therefore runs Tokvera's own `--dry-run`, shows the plan and asks, and passes `--yes` only after a yes or with `halotrcer check --yes`. `--demo` (Tokvera's built-in simulator) needs no confirmation.
-- **I3: Tokvera's provisional label.** report.json carries `score.provisional` and `scoring_version`, not the words. The words come from Tokvera's documentation (docs/scoring.md:94), and the report shows them verbatim. *Cross-repo suggestion for Tokvera, not made from here:* adding the label and the note to report.json would remove the copy.
+- **I3: Tokvera's provisional label.** report.json carries `score.provisional` and `scoring_version`, not the words. The words come from Tokvera's documentation (docs/scoring.md:94), and the report shows them verbatim. **Done in Tokvera `0f37696` (schema v1.3.0, 2026-10-21):** report.json carries `score.provisional_label` and `score.provisional_note` while scoring is provisional. Halotrcer shows those words, and keeps its copy only as the fallback for a report older than v1.3.0 (`TestTokveraProvisionalWords`). The Tokvera fixture was rebuilt from `f2a7906` (2026-10-21, schema v1.3.0); a trimmed v1.2.0 report from `b97e278` stays for the fallback test, and the matrix records `schema_tested: tokvera.scan-report/v1.3.0`.
 - **I4: mirrors.** `HALOTRCER_INSTALL_DOWNLOAD_BASE` and `HALOTRCER_INSTALL_API_BASE` are owner-level bases, with `/<repo>/…` appended, because Halotrcer installs from three repositories.
 - **I5: PDF metrics.** Glyph widths come from Adobe's Core 14 AFM files, with their notice and licence kept (internal/pdf/AFM-LICENSE.txt, NOTICE).
 
@@ -73,7 +73,7 @@ Parts, one commit each:
 
 1. **Skeleton.**
    - `go.mod` (toolchain pinned, C12), Apache-2.0 LICENSE and NOTICE, `.golangci.yml` (the tools' v2 config shape), Makefile targets `build vet test lint vuln toolchain-check secrets actionlint shellcheck gates`, and `.gitignore` and `.gitleaksignore`.
-   - `ci.yml` with every gate (C10), on ubuntu-24.04, with SHA-pinned actions copied from the tools' pins and re-read from each action's releases page. `contents: read`, `persist-credentials: false`, and checksum-verified tool downloads.
+   - `ci.yml` with every gate (C10), on `${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}` (owner, 2026-10-21; docs/development.md), with SHA-pinned actions copied from the tools' pins and re-read from each action's releases page. `contents: read`, `persist-credentials: false`, and checksum-verified tool downloads.
    - No telemetry: there is no network access except the scanned target, release downloads during install/update, and `doctor --check-update`.
 2. **`internal/compat`.**
    - The embedded compatibility matrix (D2) and the version probes:
@@ -133,41 +133,32 @@ Risks:
 
 ### M2: bundle channels
 
-- **GoReleaser v2.18.3** (the tools' pin and checksum), with the same channel set and naming:
-  - archives `halotrcer_{{ .Version }}_{{ .Os }}_{{ .Arch }}`, `checksums.txt`, syft SBOM;
-  - cosign keyless `checksums.txt.sigstore.json`, with the identity pinned to `halotrcer/.github/workflows/release.yml@refs/tags/v`;
-  - SLSA provenance through `actions/attest`;
-  - `release.disable` when `RELEASE_PHASE=publish`, `draft: true`, `prerelease: auto`.
-- **Dependencies**, each checked against the channel's own documentation and `goreleaser jsonschema` before use (**VERIFY** every one):
-  - cask: `depends_on cask:` `rajasatyajit/tap/tokvera`, `rajasatyajit/tap/sievant`;
-  - Scoop: `depends` `rajasatyajit/tokvera`, `rajasatyajit/sievant`;
-  - winget: `Dependencies.PackageDependencies` `Halotrcer.Tokvera`, `Halotrcer.Sievant`;
-  - deb, rpm and apk: `depends: tokvera, sievant`.
-- **Shared repositories:** `scripts/release/package-repos.sh`, `publish-repos.sh` and `package-repos-docker.sh` implement Sievant's PLAN.md §6l contract to the letter. They are written fresh against the contract text, not copied.
-  - `repo-meta.env` is read from `gh-pages`, parsed as strict `KEY=value` with the four regexes, never sourced, and seeded only when missing.
-  - Indexes are built from the whole pool across all architectures.
-  - The metadata is re-signed when the Release disagrees with the file.
-  - A push is retried 3 times with 5 s and 10 s backoff, each attempt from a fresh clone, and only on a non-fast-forward rejection.
-  - Tests in Docker, run on your go-ahead:
-    - a site holding Tokvera's and Sievant's packages and a `repo-meta.env` with an extra key stays **byte for byte** after a Halotrcer publish;
-    - a riscv64 pool package is indexed;
-    - malformed and `$(…)` files are refused with nothing executed;
-    - a push race is retried.
-  - The fixtures are packages I build in the test, named like theirs, not their files.
-- **apk:** a new key, whose public half you provide (`packaging/keys/satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub`). deb and rpm use the shared `halotrcer-packages.asc` (fingerprint `D2D9 6618 831A C55B 81E2 4DA3 039B 5DA0 D3E3 9071`), whose public key I copy from the tools' `packaging/keys/` after confirming the fingerprint.
-- **Image:** `ghcr.io/rajasatyajit/halotrcer` on distroless `static-debian13:nonroot` (digest-pinned, user 65532), cosign-signed and attested.
-  - It holds `/usr/bin/halotrcer` plus `tokvera` and `sievant`, copied with `COPY --from=ghcr.io/rajasatyajit/{tokvera,sievant}:vX@sha256:…`: their released images, digest-pinned and bumped by the matrix.
-- **Helm umbrella chart** `charts/halotrcer`, with dependencies `tokvera` and `sievant` from `oci://ghcr.io/rajasatyajit/charts`, `condition: tokvera.enabled` / `sievant.enabled` (D8). It is packaged, pushed, signed and attested only in `release.yml`'s publish job.
-- **Release candidates:** `skip_upload: auto` on the cask, Scoop and winget, and `if: !contains(tag,'-')` on the apt/yum publishing, so release candidates never reach those channels. The `latest` image tag applies to stable releases only.
-- **Two-phase `release.yml`**, in the tools' job order:
-  1. `draft-preflight` (gates, the key check, tag on origin/main, repository public);
-  2. `draft` (`--skip=docker,homebrew,scoop,winget`, then attest);
-  3. `publish-preflight`;
-  4. `publish`, in concurrency group `packages-gh-pages`: cosign-verify the published checksums, rebuild and `compare-archives.sh`, `gh attestation verify`, publish the channels, image, chart and package repositories;
-  5. `publish-not-run`.
-- Risks:
-  - winget moderation may question a bundle that depends on two other packages: **VERIFY** the winget-pkgs dependency policy.
-  - The Scoop cross-bucket `depends` syntax: **VERIFY**.
+Owner input (2026-10-21): the apk public key is `packaging/keys/satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub` (RSA-4096, DER sha256 `8fd0bd73…15c4`); `PKG_APK_KEY` and the shared release secrets are set on `rajasatyajit/halotrcer`. Tokvera is adding the provisional label and note to report.json (a schema minor bump): Halotrcer reads them from there once that lands and keeps its copy (I3) only as the fallback for older reports.
+
+Corrections found in M2:
+
+| # | Brief or plan | What the repositories say | M2 |
+|---|---|---|---|
+| C13 | "deb/rpm/apk into the shared signed repos" | The §6l contract covers apt and yum only. Neither tool publishes an apk repository: their apks are release assets, installed with `apk add ./file.apk` (both docs/install.md). | deb and rpm go to the shared repositories; the apk is a release asset, as theirs. Its `depends` resolve when the three apks are added in one `apk add` (`make repos-check` tests it; not yet run), which M3's installer and docs must do. |
+| C14 | Package dependencies with a version range | Homebrew cask `depends_on cask:` and Scoop `depends` take no version (Cask Cookbook; Scoop lib/depends.ps1). winget has `MinimumVersion` only (schema 1.12.0). deb, rpm and apk each take their own syntax; nfpm v2.47.0 writes strings unchanged. | cask and Scoop: names only (`rajasatyajit/tap/<tool>`, `rajasatyajit/<tool>`); winget: `MinimumVersion 0.2.0`; deb/rpm/apk: `>= 0.2.0` and `< 0.3.0` in each format's syntax (`TestPackageDependenciesMatchMatrix`). Outside those, `halotrcer doctor` warns on a version outside the matrix. |
+
+Dependency syntax, verified against each channel's own source (2026-10-21):
+- **Homebrew cask:** docs.brew.sh Cask Cookbook, `depends_on`: "cask: required Homebrew cask tokens as string or array". A `tap/token` loads from that tap (Homebrew `cask/cask_loader.rb` FromTapLoader); an unqualified token searches every tap and can be ambiguous. GoReleaser v2.18.3 renders `dependencies: [{cask: …}]` verbatim, sorted (`internal/pipe/cask/template.go`).
+- **Scoop:** `depends` accepts `bucket/app` (Scoop `lib/core.ps1` parse_app; `lib/depends.ps1` aborts when the bucket is not added). Users add the bucket as `rajasatyajit`, as both tools document.
+- **winget:** `Dependencies.PackageDependencies` with `PackageIdentifier` and `MinimumVersion` (GoReleaser v2.18.3 emits manifest 1.12.0). The client installs package dependencies since 1.6 (release v1.6.2631 notes). winget-pkgs: "Dependencies … must come from the same source" (installer schema 1.12.0) and validation checks that each dependency exists in the catalog (doc/Validation.md), so the tools' manifests must be merged first (docs/releasing.md).
+- **deb/rpm/apk:** Debian Policy 7.1 (`<<`, `>=`), rpmpack relations (`<`, `>=`), apk-world(5) (`<`, `>=`); one constraint per entry, per-format `overrides`, no top-level list.
+
+Built (branch `m2-channels`):
+- **`.goreleaser.yaml`** (GoReleaser v2.18.3, `goreleaser check` clean): archives `halotrcer_{{ .Version }}_{{ .Os }}_{{ .Arch }}` with LICENSE, NOTICE and README; `checksums.txt`; syft SBOMs; keyless cosign bundle; deb/rpm/apk (apk key name `satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub`); `dockers_v2`; cask, Scoop and winget with the dependencies above and `skip_upload: auto`; draft release disabled in the publish phase.
+- **Image:** distroless static-debian13 :nonroot by the tools' digest, user 65532. halotrcer from the build; tokvera, sievant and their LICENSE/NOTICE copied out of their released images.
+- **I6, bundled tools:** `packaging/bundled-tools.env` pins each tool's release tag, image digest and chart digest. `verify-bundled.sh` checks each image digest names an image index and each chart digest a Helm chart (both carry the same signing identity, so cosign alone cannot tell them apart), then cosign; it runs in the draft preflight and again in the publish job. A stable tag must pin stable tool releases. It is parsed strictly, never sourced (`bundled-tools.sh`), and is empty until both tools release; the preflight refuses an empty or malformed file. The publish job cosign-verifies each digest against the **exact** identity of that tag's release run (`…/release.yml@refs/tags/vX.Y.Z`), not the tag-prefix regexp, so a digest is accepted only from the release it claims. Nothing is built from them before that.
+- **I7, umbrella chart** `charts/halotrcer`: no resources of its own; `tokvera` and `sievant` dependencies from `oci://ghcr.io/rajasatyajit/charts`, each switched on by a Helm tag, `tags.tokvera` and `tags.sievant`, both false (D8); NOTES says what each needs. **Not** `condition: <tool>.enabled` as planned: helm passes that key into the subchart's values, and both tools' `values.schema.json` set `additionalProperties: false`, so with a condition neither tool could be switched on (found by the M2 review with the real charts, reproduced). Tags never reach a subchart. Helm never resolves the dependencies: `fetch-chart.sh` fetches each chart by its verified digest with oras and checks both the manifest and the layer digest itself, and `package-chart.sh` vendors them, checks each chart's name and version against the pins, lints with both off and both on, and packages. The draft preflight builds it from the pins (so a bad pin or chart stops the release before the draft), and the publish job builds it before anything is published and pushes, signs and attests it after the other channels.
+  - **Blocked on Tokvera (cross-repo, not changed from here):** helm gives every subchart a `global` key, and Tokvera's `deploy/helm/tokvera/values.schema.json` (at `0f37696`) refuses it, so with Tokvera switched on the umbrella fails validation: `additional properties 'global' not allowed`. Sievant's schema lists `global` and works (reproduced with copies of both real charts and helm 4.3.0). The fix is one property in Tokvera's schema, `"global": {"type": "object"}`. Until Tokvera's pinned chart has it, `package-chart.sh` fails its both-on lint, so no Halotrcer release can go out with an umbrella that cannot enable Tokvera (`TestPackageChart` "no global").
+- **Shared repositories:** `package-repos.sh`, `package-repos-docker.sh` and `publish-repos.sh` implement §6l: the same parsing, regexes, architecture union, re-sign on a changed description, idempotence, pinned image and tool versions, 3 attempts with 5 s/10 s backoff from a fresh clone, only on a moved branch. Halotrcer's pool is `apt/pool/main/h/halotrcer`, `rpm/halotrcer.repo`, commit "halotrcer TAG". **I8:** on a failure path it is stricter than the tools' scripts: the settings, the signing key and every replaced package are checked before the site is written (theirs refuse at the same points, after copying), so a refused publish leaves the site exactly as it was. Behaviour on success is the same.
+- **`release.yml`:** the tools' two phases and job set (`draft-preflight`, `draft`, `publish-preflight`, `publish` in `packages-gh-pages`), with the steps above. No air-gapped bundle (Sievant's own feature).
+- **Tests:** `scripts/` (config, keys, seed sha256 equal to both tools' copies, pins, preflight, write-keys, compare-archives, image-subject, push-chart, package-chart with fixture subcharts, workflow rules for every workflow, release.yml order and gates), mutation-checked. `make repos-check` (Docker, `-tags integration`): a site as the tools leave it stays byte for byte through two Halotrcer publishes, a riscv64 Tokvera package is indexed, a re-run changes nothing, malformed, `$(…)`, backtick, incomplete and bad-architecture `repo-meta.env`, a replaced package and a wrong key are each refused with the site unchanged and nothing executed, a changed description re-signs, an empty site gets the seed; then apt (Ubuntu), dnf (Fedora) and apk (Alpine) install `halotrcer` and both tools come with it; and the push race (one race retried, three races give up with nothing pushed).
+- **Waits for the owner's go-ahead (Docker):** `make shellcheck` (digest-pinned images), `make repos-check`, a `goreleaser release --snapshot` to prove the archives rebuild byte-identically and the packages and image build. The snapshot image needs tool images; until they exist it uses locally built stand-ins.
+- Risks: winget reviewers may question a bundle manifest (no rule against it found; UNVERIFIED beyond doc/Validation.md). The image and chart cannot be built for real until both tools publish images and charts.
 
 ### M3: universal installer scripts
 
@@ -177,6 +168,7 @@ Risks:
 - Mirror overrides: `HALOTRCER_INSTALL_DOWNLOAD_BASE` and `HALOTRCER_INSTALL_API_BASE`, https or loopback http only. Each tool is fetched from its own release with its own cosign identity regexp, as in each tool's script.
 - OS, arch, Rosetta and musl detection; signature then checksum (C7); idempotent; atomic install.
 - At the end it prints `halotrcer check --target <url>`.
+- `halotrcer doctor` recognizes the container image, as Tokvera's doctor does, and gives no install or update advice inside it (owner, 2026-10-21; found in the M2 image check).
 - PowerShell:
   - every native call goes through `Invoke-HalotrcerNative` (Process-based, safe on 5.1 when stderr is written);
   - every script-scope variable is `$script:Halotrcer*`;
@@ -203,6 +195,8 @@ Risks:
 
   - Linux runs on `[ubuntu-latest, ubuntu-24.04-arm]`. macOS runs on macos-latest (with a Rosetta channel) and macos-15-intel.
   - Windows runs on `[windows-latest, windows-11-arm]` × `native/script/iex` under PowerShell 5.1 and 7, plus `scoop-ps7` and `winget-ps7` (a pinned winget when the runner's is older).
+  - `workflow_dispatch` inputs `include_macos` and `include_windows` (boolean, default false). Those jobs run only when theirs is true. Otherwise they record `SKIP: not requested (owner approves macOS/Windows runs per release candidate)` (owner, 2026-10-21; docs/development.md).
+  - Every other Linux job (`snapshot`, and `integration.yml`) runs on `${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}`, installs what it needs itself and first runs `scripts/ci/runner-tools.sh` on a self-hosted runner; the smoke matrix's `ubuntu-latest` and the arm64 runners stay as they are.
 - Every step uses `if: !cancelled()` and appends `RESULT <channel> PASS|SKIP <reason>|FAIL <reason>`. `check-results.sh` alone decides the job.
 - Per channel:
   - the three versions are checked against the matrix;

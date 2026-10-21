@@ -410,7 +410,7 @@ func printSummary(w io.Writer, r *report.Report, paths []string, rd *redact.Reda
 	if c := r.CostPerformance; c != nil {
 		g := "Efficiency grade (Tokvera): " + gradeText(s.Grade)
 		if s.GradeProvisional {
-			g += " (" + report.TokveraProvisionalLabel + " " + c.ScoringVersion + ")"
+			g += " (" + c.ProvisionalLabel + " " + c.ScoringVersion + ")"
 		}
 		b.WriteString(g + "\n")
 		if s.USDPer1kRequests != nil {

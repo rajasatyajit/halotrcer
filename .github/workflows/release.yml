@@ -6,7 +6,8 @@ name: release
 # .goreleaser.yaml, internal/install, the install scripts and the cask caveats
 # all name `.github/workflows/release.yml@refs/tags/v…`.
 #
-#   1. draft (a v* tag is pushed): preflight and the gates, read-only; then
+#   1. draft (a v* tag is pushed): the gates, unprivileged (draft-gates);
+#      then, in the release environment, preflight; then
 #      GoReleaser builds, signs the packages, cosign-signs checksums.txt
 #      (keyless), writes the SBOMs and uploads a DRAFT release, skipping
 #      docker, homebrew, scoop and winget; then SLSA provenance for every
@@ -27,8 +28,11 @@ name: release
 #      Tokvera and Sievant (packages are added, nothing is removed).
 #
 # The repository must be public (preflight refuses otherwise). Both
-# privileged jobs run in the `release` environment, where the owner is the
-# required reviewer. docs/releasing.md has the steps.
+# privileged jobs run in the `release` environment, where the owner is the required
+# reviewer, and no step outside it receives a secret: the preflight checks
+# are the first steps of each privileged job. The gates run first, in
+# draft-gates, which holds no secret and cannot sign. docs/releasing.md has
+# the steps.
 
 on:
   push:
@@ -46,8 +50,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Phase 1, read-only: refuse early, and run the gates without a write token.
-  draft-preflight:
+  # Phase 1a, unprivileged: everything that runs this repository's or its
+  # dependencies' code (the gates, the race tests, helm on the umbrella
+  # chart) runs here, with contents: read, no secrets, no OIDC token and no
+  # environment. A job given id-token: write lets every step in it mint an
+  # OIDC token, so no test runs in a job that can sign.
+  draft-gates:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -57,20 +65,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0 # the tag must be on origin/main; GoReleaser reads tags
-      - name: Preflight
-        env:
-          TAG: ${{ github.ref_name }}
-          REPO_PRIVATE: ${{ github.event.repository.private }}
-          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
-          PKG_GPG_PASSPHRASE: ${{ secrets.PKG_GPG_PASSPHRASE }}
-          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
-        run: sh scripts/release/preflight.sh draft "$TAG"
-      - name: The signing keys match packaging/keys/
-        env:
-          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
-          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
-        run: sh scripts/release/write-keys.sh --check
+          fetch-depth: 0
       - name: Go version from go.mod's toolchain line
         id: go
         run: |
@@ -116,8 +111,7 @@ jobs:
           sh scripts/release/bundled-tools.sh > "$RUNNER_TEMP/bundled.env"
           sh scripts/release/verify-bundled.sh "$RUNNER_TEMP/bundled.env"
           sh scripts/release/bundled-chart.sh "$RUNNER_TEMP/bundled.env" "$TAG" "$RUNNER_TEMP/chart"
-      # The ci.yml gates that need no extra tool, at the tagged commit, with
-      # no write token.
+      # The ci.yml gates that need no extra tool, at the tagged commit.
       - name: Gates (at the tagged commit)
         run: |
           set -euo pipefail
@@ -126,8 +120,14 @@ jobs:
           make test
           make vuln
 
+  # Phase 1b, in the `release` environment, after the owner's approval:
+  # preflight and the keys check first, then the build, signing, upload and
+  # provenance. GoReleaser compiles (no hooks, CGO_ENABLED=0) and runs no
+  # code from the repository's packages or its dependencies; no test runs
+  # here.
   draft:
-    needs: draft-preflight
+    if: github.event_name == 'push'
+    needs: draft-gates
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: release
@@ -139,7 +139,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: 0 # the tag must be on origin/main; GoReleaser reads tags
+      - name: Preflight
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO_PRIVATE: ${{ github.event.repository.private }}
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_GPG_PASSPHRASE: ${{ secrets.PKG_GPG_PASSPHRASE }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/preflight.sh draft "$TAG"
+      - name: The signing keys match packaging/keys/
+        env:
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/write-keys.sh --check
       - name: Go version from go.mod's toolchain line
         id: go
         run: |
@@ -150,6 +163,7 @@ jobs:
         with:
           go-version: ${{ steps.go.outputs.version }}
           cache: false # a release builds from a clean module cache
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       # GoReleaser and syft at both tools' pins, verified against their
       # published checksums.
       - name: Install goreleaser
@@ -176,7 +190,6 @@ jobs:
           echo "${SYFT_SHA256}  $f" | sha256sum -c -
           tar xzf "$f" -C "$dir" syft
           echo "$dir" >> "$GITHUB_PATH"
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Check the config and the toolchain
         run: |
           set -euo pipefail
@@ -215,38 +228,12 @@ jobs:
           cp "$BUNDLE" "$out"
           gh release upload "$TAG" "$out" --repo "$GITHUB_REPOSITORY"
 
-  # Phase 2, read-only: refuse early.
-  publish-preflight:
+  # Phase 2, in the `release` environment like phase 1. Preflight and the
+  # keys check come first, before anything is installed, verified or pushed.
+  publish:
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Preflight
-        env:
-          TAG: ${{ github.event.release.tag_name }}
-          REPO_PRIVATE: ${{ github.event.repository.private }}
-          PUBLISHER_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
-          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
-          PKG_GPG_PASSPHRASE: ${{ secrets.PKG_GPG_PASSPHRASE }}
-          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
-        run: sh scripts/release/preflight.sh publish "$TAG"
-      # The OpenPGP key signs the apt and yum repositories in this phase.
-      - name: The signing keys match packaging/keys/
-        env:
-          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
-          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
-        run: sh scripts/release/write-keys.sh --check
-
-  publish:
-    needs: publish-preflight
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 55
     environment: release
     # One publish of this repository at a time touches the shared package
     # repositories. A concurrency group cannot reach Tokvera's or Sievant's
@@ -270,6 +257,20 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Preflight
+        env:
+          REPO_PRIVATE: ${{ github.event.repository.private }}
+          PUBLISHER_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_GPG_PASSPHRASE: ${{ secrets.PKG_GPG_PASSPHRASE }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/preflight.sh publish "$TAG"
+      # The OpenPGP key signs the apt and yum repositories in this phase.
+      - name: The signing keys match packaging/keys/
+        env:
+          PKG_GPG_KEY: ${{ secrets.PKG_GPG_KEY }}
+          PKG_APK_KEY: ${{ secrets.PKG_APK_KEY }}
+        run: sh scripts/release/write-keys.sh --check
       - name: Go version from go.mod's toolchain line
         id: go
         run: |

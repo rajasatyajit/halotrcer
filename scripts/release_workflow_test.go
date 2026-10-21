@@ -91,18 +91,45 @@ func TestWorkflowRules(t *testing.T) {
 	}
 }
 
+// testRun matches a step that runs tests: they execute dependency code.
+var testRun = regexp.MustCompile(`\bgo test\b|\bmake\b[^\n]*\b(test|gates|race)\b`)
+
+// jobSecrets lists the secrets a job's YAML names anywhere: job env, step
+// env, with or run.
+func jobSecrets(t *testing.T, raw, job string) []string {
+	t.Helper()
+	var doc struct {
+		Jobs map[string]any `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal([]byte(raw), &doc); err != nil {
+		t.Fatal(err)
+	}
+	b, err := yaml.Marshal(doc.Jobs[job])
+	if err != nil {
+		t.Fatal(err)
+	}
+	return regexp.MustCompile(`secrets\.[A-Za-z_]+`).FindAllString(string(b), -1)
+}
+
 // TestReleaseWorkflow pins release.yml's two phases, their permissions and
 // the order of the checks before anything public moves.
+//   - draft-gates runs the gates and everything else that executes this
+//     repository's or its dependencies' code, unprivileged: contents: read,
+//     no secret, no id-token, no environment.
+//   - draft and publish run in the release environment, their preflight
+//     checks first, so no step holding a secret runs before the owner
+//     approves.
+//   - A job with id-token: write lets every step mint an OIDC token, so no
+//     such job runs a test.
 func TestReleaseWorkflow(t *testing.T) {
 	w, raw := readWorkflow(t, "release.yml")
 	if p, ok := w.Permissions.(map[string]any); !ok || len(p) != 0 {
 		t.Errorf("top-level permissions %v, want {}", w.Permissions)
 	}
 	want := map[string]map[string]string{
-		"draft-preflight":   {"contents": "read"},
-		"draft":             {"contents": "write", "id-token": "write", "attestations": "write"},
-		"publish-preflight": {"contents": "read"},
-		"publish":           {"contents": "read", "packages": "write", "id-token": "write", "attestations": "write"},
+		"draft-gates": {"contents": "read"},
+		"draft":       {"contents": "write", "id-token": "write", "attestations": "write"},
+		"publish":     {"contents": "read", "packages": "write", "id-token": "write", "attestations": "write"},
 	}
 	if len(w.Jobs) != len(want) {
 		t.Errorf("jobs %v", w.Jobs)
@@ -121,24 +148,74 @@ func TestReleaseWorkflow(t *testing.T) {
 			}
 		}
 	}
+	gatesJob := w.Jobs["draft-gates"]
+	if gatesJob.Environment != "" || gatesJob.Permissions["id-token"] != "" {
+		t.Errorf("draft-gates: environment %q, id-token %q; want neither", gatesJob.Environment, gatesJob.Permissions["id-token"])
+	}
+	if sec := jobSecrets(t, raw, "draft-gates"); len(sec) > 0 {
+		t.Errorf("draft-gates names secrets: %v", sec)
+	}
+	for name, j := range w.Jobs {
+		if sec := jobSecrets(t, raw, name); len(sec) > 0 && j.Environment != "release" {
+			t.Errorf("%s holds %v outside the release environment", name, sec)
+		}
+		if j.Permissions["id-token"] == "" {
+			continue
+		}
+		for i, s := range j.Steps {
+			if testRun.MatchString(s.Run) {
+				t.Errorf("%s can mint an OIDC token and runs tests in step %d %q", name, i, s.Name)
+			}
+		}
+	}
 	for _, name := range []string{"draft", "publish"} {
 		if w.Jobs[name].Environment != "release" {
 			t.Errorf("%s runs outside the release environment", name)
 		}
 	}
-	if w.Jobs["draft"].Needs != "draft-preflight" || w.Jobs["publish"].Needs != "publish-preflight" {
-		t.Error("a privileged job does not wait for its preflight")
+	if w.Jobs["draft-gates"].If != "github.event_name == 'push'" || w.Jobs["draft"].If != "github.event_name == 'push'" ||
+		w.Jobs["publish"].If != "github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')" {
+		t.Errorf("phase triggers: draft-gates %q, draft %q, publish %q", w.Jobs["draft-gates"].If, w.Jobs["draft"].If, w.Jobs["publish"].If)
+	}
+	if w.Jobs["draft"].Needs != "draft-gates" {
+		t.Error("the draft does not wait for its gates")
 	}
 	if g := w.Jobs["publish"].Concurrency["group"]; g != "packages-gh-pages" {
 		t.Errorf("publish concurrency group %v, want packages-gh-pages (the shared repositories)", g)
 	}
 
+	// The gates job verifies the pins and builds the chart from them, then
+	// runs the gates.
+	if b, g := stepIndex(t, gatesJob, "scripts/release/bundled-chart.sh"), stepIndex(t, gatesJob, "Gates (at the tagged commit)"); b > g {
+		t.Error("the gates run before the chart is known to build from the pins")
+	}
+	if !testRun.MatchString(gatesJob.Steps[stepIndex(t, gatesJob, "Gates (at the tagged commit)")].Run) {
+		t.Error("draft-gates runs no tests")
+	}
+
 	draft := w.Jobs["draft"]
-	if !strings.Contains(draft.Steps[stepIndex(t, draft, "goreleaser release")].Run, "--skip=docker,homebrew,scoop,winget") {
+	release := stepIndex(t, draft, "goreleaser release")
+	if !strings.Contains(draft.Steps[release].Run, "--skip=docker,homebrew,scoop,winget") {
 		t.Error("the draft phase publishes a channel before the owner has read the draft")
+	}
+	// Preflight and the keys check straight after the checkout, then the
+	// build tools, the keys, the build.
+	dPre := stepIndex(t, draft, "preflight.sh draft")
+	dKeys := stepIndex(t, draft, "write-keys.sh --check")
+	dBuild := stepIndex(t, draft, "Install goreleaser")
+	dWrite := stepIndex(t, draft, "Write the package-signing keys")
+	if dPre != 1 || dKeys != 2 {
+		t.Errorf("the draft does something before its preflight (preflight %d, keys %d)", dPre, dKeys)
+	}
+	if order := []int{dKeys, dBuild, dWrite, release}; !slices.IsSorted(order) || len(slices.Compact(slices.Clone(order))) != len(order) {
+		t.Errorf("draft order: keys %d, build tools %d, write keys %d, release %d", dKeys, dBuild, dWrite, release)
 	}
 
 	pub := w.Jobs["publish"]
+	// Preflight and the keys check come straight after the checkout.
+	if stepIndex(t, pub, "preflight.sh publish") != 1 || stepIndex(t, pub, "write-keys.sh --check") != 2 {
+		t.Error("the publish phase does something before its preflight")
+	}
 	verify := stepIndex(t, pub, "Verify the published checksums.txt")
 	bundled := stepIndex(t, pub, "Verify the bundled Tokvera and Sievant artifacts")
 	rebuild := stepIndex(t, pub, "Rebuild, publishing nothing")
@@ -152,15 +229,11 @@ func TestReleaseWorkflow(t *testing.T) {
 	if order := []int{verify, bundled, chart, rebuild, compare, publish, push, repos}; !slices.IsSorted(order) || len(slices.Compact(slices.Clone(order))) != len(order) {
 		t.Errorf("publish order: verify %d, bundled %d, chart %d, rebuild %d, compare %d, publish %d, push %d, repos %d", verify, bundled, chart, rebuild, compare, publish, push, repos)
 	}
-	pre := w.Jobs["draft-preflight"]
-	for _, job := range []workflowJob{pre, pub} {
+	for _, job := range []workflowJob{gatesJob, pub} {
 		i := stepIndex(t, job, "scripts/release/verify-bundled.sh")
 		if job.Steps[i].Run == "" || !strings.Contains(job.Steps[i].Run, "bundled-tools.sh") {
 			t.Error("the bundled artifacts are not verified from bundled-tools.sh's output")
 		}
-	}
-	if b, g := stepIndex(t, pre, "scripts/release/bundled-chart.sh"), stepIndex(t, pre, "Gates (at the tagged commit)"); b > g {
-		t.Error("the draft builds before the chart is known to build from the pins")
 	}
 	if src := string(root(t, "scripts/release/verify-bundled.sh")); !strings.Contains(src, `--certificate-identity "$4"`) || strings.Contains(src, "identity-regexp") {
 		t.Error("the bundled artifacts are not verified against their exact release identity")

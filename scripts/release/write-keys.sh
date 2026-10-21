@@ -16,7 +16,7 @@
 #   - The RSA key's public half must be APK_PUB's (default
 #     packaging/keys/satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub).
 # --check runs the same checks in a private temporary directory, removes it
-# and prints nothing for $GITHUB_ENV (the unprivileged preflight jobs use it).
+# and prints nothing for $GITHUB_ENV (the preflight steps use it).
 # Key material is never printed; on a refusal both key files are removed.
 set -eu
 

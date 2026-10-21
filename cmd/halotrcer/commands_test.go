@@ -17,6 +17,7 @@ func TestCommandUsageErrors(t *testing.T) {
 		msg  string
 	}{
 		{[]string{"check"}, exitUsage, "--target URL is required"},
+		{[]string{"install", "--no-verify", "--require-cosign"}, exitUsage, "mutually exclusive"},
 		{[]string{"check", "--demo", "--target", "https://x.example"}, exitUsage, "exclusive"},
 		{[]string{"check", "--target", "https://x.example", "--format", "docx"}, exitUsage, "unknown format"},
 		{[]string{"check", "--target", "https://x.example", "--monthly-requests", "lots"}, exitUsage, "positive whole number"},

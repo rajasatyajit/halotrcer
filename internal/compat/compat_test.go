@@ -93,3 +93,16 @@ func TestSchemaGates(t *testing.T) {
 		}
 	}
 }
+
+func TestLess(t *testing.T) {
+	order := []string{"v0.1.9", "v0.2.0-rc.1", "v0.2.0-rc.2", "v0.2.0", "v0.2.3", "v0.2.10", "v1.0.0"}
+	for i := range order {
+		for j := range order {
+			a, _ := ParseVersion(order[i])
+			b, _ := ParseVersion(order[j])
+			if got := Less(a, b); got != (i < j) {
+				t.Errorf("Less(%s, %s) = %v", order[i], order[j], got)
+			}
+		}
+	}
+}

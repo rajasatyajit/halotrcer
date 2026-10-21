@@ -21,6 +21,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/rajasatyajit/halotrcer/internal/compat"
 )
 
 // Default release locations. The URL for a file is
@@ -39,7 +41,10 @@ var errNotFound = errors.New("HTTP 404")
 const (
 	maxArchive   = 256 << 20
 	maxSmallFile = 1 << 20
-	maxBinary    = 200 << 20
+	// GitHub's release list carries every release's assets: 100 releases
+	// of ~40 files each stay well under this.
+	maxReleaseList = 16 << 20
+	maxBinary      = 200 << 20
 )
 
 // CheckBase validates a mirror base URL.
@@ -154,6 +159,42 @@ func (d *Downloader) Latest(ctx context.Context, t Tool) (string, error) {
 	return rel.TagName, nil
 }
 
+// LatestIn returns the newest stable release of t whose tag ok accepts,
+// from the first page of GitHub's release list (the 100 newest; drafts and
+// prereleases skipped). want describes the range for the error.
+func (d *Downloader) LatestIn(ctx context.Context, t Tool, ok func(tag string) bool, want string) (string, error) {
+	b, err := d.get(ctx, d.APIBase+"/"+t.Repo+"/releases?per_page=100", maxReleaseList)
+	if err != nil {
+		return "", fmt.Errorf("listing %s releases: %w", t.Name, err)
+	}
+	var rels []struct {
+		TagName    string `json:"tag_name"`
+		Draft      bool   `json:"draft"`
+		Prerelease bool   `json:"prerelease"`
+	}
+	if err := json.Unmarshal(b, &rels); err != nil {
+		return "", fmt.Errorf("listing %s releases: %w", t.Name, err)
+	}
+	best := ""
+	var bestV compat.Version
+	for _, r := range rels {
+		if r.Draft || r.Prerelease || !tagRE.MatchString(r.TagName) || !ok(r.TagName) {
+			continue
+		}
+		v, err := compat.ParseVersion(r.TagName)
+		if err != nil || v.Pre != "" {
+			continue
+		}
+		if best == "" || compat.Less(bestV, v) {
+			best, bestV = r.TagName, v
+		}
+	}
+	if best == "" {
+		return "", fmt.Errorf("%s has no stable release in the versions this halotrcer supports (%s); give --version", t.Name, want)
+	}
+	return best, nil
+}
+
 func (d *Downloader) fileURL(t Tool, tag, file string) string {
 	return d.DownloadBase + "/" + t.Repo + "/releases/download/" + tag + "/" + file
 }
@@ -186,8 +227,20 @@ type Verifier func(ctx context.Context, args []string) error
 // checksums.txt first (when cosign is present; required with
 // requireCosign), then the archive's SHA-256 against its exact line in
 // checksums.txt. Only then is the binary taken out of the archive.
-func (d *Downloader) Fetch(ctx context.Context, t Tool, tag string, p Platform, cosign Verifier, requireCosign bool, workDir string) (*Verified, error) {
+// noVerify (--no-verify, as the tools' installers have it) skips both.
+func (d *Downloader) Fetch(ctx context.Context, t Tool, tag string, p Platform, cosign Verifier, requireCosign, noVerify bool, workDir string) (*Verified, error) {
 	archive := ArchiveName(t, tag, p)
+	if noVerify {
+		data, err := d.get(ctx, d.fileURL(t, tag, archive), maxArchive)
+		if err != nil {
+			return nil, err
+		}
+		v := &Verified{Archive: archive, Signature: "NOT checked (--no-verify), and neither was the SHA-256"}
+		if v.Binary, err = extract(data, archive, exeName(t, p)); err != nil {
+			return nil, err
+		}
+		return v, nil
+	}
 	sums, err := d.get(ctx, d.fileURL(t, tag, "checksums.txt"), maxSmallFile)
 	if err != nil {
 		return nil, err
@@ -231,14 +284,17 @@ func (d *Downloader) Fetch(ctx context.Context, t Tool, tag string, p Platform, 
 	if hex.EncodeToString(got[:]) != want {
 		return nil, fmt.Errorf("%s: SHA-256 does not match checksums.txt; refusing to install", archive)
 	}
-	bin := t.Name
-	if p.OS == "windows" {
-		bin += ".exe"
-	}
-	if v.Binary, err = extract(data, archive, bin); err != nil {
+	if v.Binary, err = extract(data, archive, exeName(t, p)); err != nil {
 		return nil, err
 	}
 	return v, nil
+}
+
+func exeName(t Tool, p Platform) string {
+	if p.OS == "windows" {
+		return t.Name + ".exe"
+	}
+	return t.Name
 }
 
 // checksumFor finds archive's exact line ("<sha256>  <name>").

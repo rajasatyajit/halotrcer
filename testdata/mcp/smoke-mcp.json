@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "notes": {
+      "url": "https://mcp.example.invalid/sse?api_key=smoke-canary-in-url-0000"
+    },
+    "tickets": {
+      "command": "node",
+      "args": ["/opt/tickets-mcp/server.js"],
+      "env": {
+        "TICKETS_API_TOKEN": "smoke-canary-env-value-0000"
+      }
+    },
+    "files": {
+      "command": "npx",
+      "args": ["-y", "@example/files-mcp"]
+    }
+  }
+}

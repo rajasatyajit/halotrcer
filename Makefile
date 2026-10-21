@@ -96,17 +96,18 @@ repos-check:
 	$(STOCK_GO) test -tags integration -count=1 -timeout 30m -run 'TestSharedRepositories|TestPublishReposRetriesARace' -v ./scripts/
 
 # install-check runs the installer tests where this machine lacks the
-# shells: install.ps1's under pwsh 7.1.5 and 7.4, install.sh's under each
-# image's sh and dash (when it has dash) and under Alpine's busybox. One
-# static test binary, built here, runs in every container (read-only mount;
-# the end-to-end test, which needs go, skips there and runs in make test).
+# shells: install.ps1's under pwsh 7.1.5 and 7.4, install.sh's under Alpine's
+# busybox (its wget). One static test binary, built here, runs in every
+# container (read-only mount; the end-to-end test, which needs go, skips
+# there and runs in make test). dash runs in CI: the pwsh images have dash but
+# no curl or wget, so install.sh's tests would only skip there.
 install-check:
 	@command -v docker >/dev/null || { echo "install-check: needs docker" >&2; exit 1; }
 	CGO_ENABLED=0 $(STOCK_GO) test -c -o bin/scripts.test ./scripts
 	@for img in $(PWSH_IMAGES); do \
 		echo "== $$img"; \
 		docker run --rm -v "$(CURDIR):/src:ro" -w /src/scripts $$img sh -c \
-			'pwsh -NoProfile -Command "\$$PSVersionTable.PSVersion.ToString()"; shells=sh; command -v dash >/dev/null && shells="sh dash"; echo "shells: $$shells"; HALOTRCER_TEST_SHELLS="$$shells" /src/bin/scripts.test -test.count=1 -test.run "TestPS1|TestInstall"' || exit 1; \
+			'pwsh -NoProfile -Command "\$$PSVersionTable.PSVersion.ToString()" && /src/bin/scripts.test -test.count=1 -test.run TestPS1' || exit 1; \
 	done
 	@echo "== $(ALPINE_IMAGE) (busybox)"
 	docker run --rm -v "$(CURDIR):/src:ro" -w /src/scripts -e HALOTRCER_TEST_SHELLS=busybox $(ALPINE_IMAGE) /src/bin/scripts.test -test.count=1 -test.run TestInstall

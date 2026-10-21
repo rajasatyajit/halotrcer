@@ -7,6 +7,7 @@
 Some checks need more than Go, so `make gates` doesn't run them:
 
 - **`make release-check`** needs goreleaser 2.18.3.
+- **`make install-check`** needs Docker. It runs the install.ps1 tests under the pinned pwsh 7.1.5 and 7.4 images, and the install.sh tests under Alpine's busybox. dash runs in CI, where the test fails without it; the pwsh images have dash but no curl or wget.
 - **`make repos-check`** needs Docker and nfpm. It builds packages and tests the shared apt and yum repositories, and installs with apt, dnf and apk in containers.
 
 ## Where the Linux jobs run: `LINUX_RUNNER`

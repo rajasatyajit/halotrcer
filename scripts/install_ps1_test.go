@@ -561,7 +561,9 @@ Get-Variable | Where-Object { $_.Name -notin @('before', '_', 'PSItem', '?', '^'
 	if err != nil {
 		t.Fatalf("pwsh: %v\n%s", err, out)
 	}
-	params := map[string]bool{"Only": true, "Version": true, "Dir": true, "Global": true, "DryRun": true, "NoVerify": true, "RequireCosign": true}
+	// Names compare case-insensitively, as PowerShell's do: the caller's
+	// $dir is the script's -Dir.
+	params := map[string]bool{"only": true, "version": true, "dir": true, "global": true, "dryrun": true, "noverify": true, "requirecosign": true}
 	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 	if last := strings.TrimSpace(lines[len(lines)-1]); last != "repo=caller tools=caller code=caller" {
 		t.Errorf("the caller's variables changed: %s", last)
@@ -571,7 +573,7 @@ Get-Variable | Where-Object { $_.Name -notin @('before', '_', 'PSItem', '?', '^'
 		// $Dir is a parameter: dot-sourcing binds it, as Tokvera's does; the
 		// caller's own $dir is the case the parameter names must avoid in
 		// smoke scripts (none exists yet; M4 adds them under this rule).
-		if name != "" && !params[name] && !strings.HasPrefix(name, "Halotrcer") {
+		if name != "" && !params[strings.ToLower(name)] && !strings.HasPrefix(strings.ToLower(name), "halotrcer") {
 			t.Errorf("dot-sourcing install.ps1 sets $%s: name it $script:Halotrcer..., so it cannot overwrite a caller's variable", name)
 		}
 	}

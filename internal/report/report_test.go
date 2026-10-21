@@ -207,7 +207,7 @@ func TestCanaries(t *testing.T) {
 	const (
 		home   = "/home/canaryperson"
 		user   = "canaryperson"
-		secret = "sk-canary-0123456789abcdefgh"
+		secret = "sk-canary-0123456789abcdefgh" // gitleaks:allow (synthetic canary planted in every report field)
 	)
 	leakURL := "https://canaryperson:hunter22pass@api.example.com/v1?api_key=" + secret
 	tok.Target.BaseURL = leakURL

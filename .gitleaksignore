@@ -1,18 +1,18 @@
-# Reviewed gitleaks false positives, by fingerprint (never by disabling a
-# rule). Every entry is a synthetic canary a test plants to prove the value
-# never reaches any output; none is or was a credential.
+# Reviewed gitleaks false positives (never by disabling a rule). Every one is a
+# synthetic canary a test plants to prove the value never reaches any output;
+# none is or was a credential.
+#
+# Today each canary line carries an inline `gitleaks:allow` comment, which
+# `gitleaks dir` and every later commit honour wherever the line moves. The
+# entries below cover only the commits that first added those lines, before
+# the comments existed; history does not change, so they stay valid.
 #
 # commands_test.go: "sk-live-SECRET123456" passed to --api-key-env (never echoed)
 4679543ca3da1db2ca41aa039ca11cd0772ae358:cmd/halotrcer/commands_test.go:generic-api-key:50
-cmd/halotrcer/commands_test.go:generic-api-key:55
 # redact_test.go: "tok-canary-..." in MY_API_TOKEN
 b6d9ff8bc7e09060fd47e1b5243c924f5827480d:internal/redact/redact_test.go:generic-api-key:68
-internal/redact/redact_test.go:generic-api-key:71
 # report_test.go: the "sk-canary-..." secret planted in every report field
 bb87f43d9eabc83892bd0be50948b3b8162460e2:internal/report/report_test.go:generic-api-key:203
-internal/report/report_test.go:generic-api-key:210
 # check_test.go: "sk-canary-..." in MY_LLM_KEY; "sk-live-0123456789" pasted as --api-key-env
 4a941d9c8ea4c1bd2ab4b44eca3a2d1e2c222d67:internal/check/check_test.go:generic-api-key:94
-internal/check/check_test.go:generic-api-key:94
 4a941d9c8ea4c1bd2ab4b44eca3a2d1e2c222d67:internal/check/check_test.go:generic-api-key:260
-internal/check/check_test.go:generic-api-key:260

@@ -52,7 +52,7 @@ func TestCommandHelp(t *testing.T) {
 
 func TestNoKeyEchoed(t *testing.T) {
 	var out, errb bytes.Buffer
-	run([]string{"check", "--target", "https://x.example", "--api-key-env", "sk-live-SECRET123456"}, &out, &errb)
+	run([]string{"check", "--target", "https://x.example", "--api-key-env", "sk-live-SECRET123456"}, &out, &errb) // gitleaks:allow (synthetic canary: must never be echoed)
 	if strings.Contains(out.String()+errb.String(), "SECRET123456") {
 		t.Error("a pasted key was echoed")
 	}

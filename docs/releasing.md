@@ -16,6 +16,7 @@ Halotrcer bundles two other releases, so it can only be released after both of t
 
 - [ ] **Tokvera and Sievant are released.** Each has a published release in the compatibility matrix (`internal/compat/matrix.json`, currently `>=0.2.0 <0.3.0`), with its image and chart pushed.
 - [ ] **Tokvera's embedded price list is fresh.** Its `as_of` is 2026-10-11 (`pkg/scan/rates.yaml` in Tokvera), and Tokvera calls it stale more than 60 days later (`EmbeddedPricingStaleDays`, `pkg/scan/pricinginfo.go`). 2026-12-10 is the last clean day: from 2026-12-11, every scan, and so every Halotrcer report, carries the stale-prices warning. Have Tokvera refresh the sheet right before any Tokvera release that Halotrcer will pin.
+- [ ] **Before the first release candidate: the brew smoke under `HOMEBREW_DEVELOPER=1`.** Dispatch `smoke.yml` with `include_macos` once, with `HOMEBREW_DEVELOPER=1` set for the brew channel, and record here whether the `postflight` deprecation warning becomes an error. Homebrew's `odeprecated` raises instead of warning when `HOMEBREW_DEVELOPER` is set (`disable_for_developers`, `Library/Homebrew/utils/output.rb:256` at 7.0.10), but the smoke runs so far had developer mode switched on by `brew tap-new` and still only warned. Result: _not yet run_.
 - [ ] **For a stable Halotrcer release:** both tools' winget manifests are merged into `microsoft/winget-pkgs`. winget-pkgs validation refuses a manifest whose dependencies are not in the catalog yet.
 - [ ] **The repository is public** (it is, since 2026-10-21). The preflight refuses a private one: attestations need it, and every channel downloads release assets without credentials. Tokvera's and Sievant's repositories must be public too: `halotrcer install` and every package manager download their releases without credentials.
 - [ ] **Private vulnerability reporting is on** (Settings → Code security → Private vulnerability reporting). SECURITY.md offers it as a reporting channel.
@@ -113,6 +114,19 @@ Their version of the change:
    - the `release` environment with the owner as required reviewer;
    - the four secrets moved into it, with the repository copies deleted;
    - optionally, a tag ruleset limiting who may create `v*` tags.
+
+## Homebrew cask hooks: the move to declarative steps
+
+Every cask removes macOS's quarantine flag from its binary in a Ruby `postflight` block, which GoReleaser 2.18.3 writes from `hooks.post.install`. Homebrew 7 deprecates Ruby flight blocks in favour of `postflight_steps`, and since 7.0.0 brew prints "Calling `postflight` is deprecated! Use `postflight_steps` instead." on every install.
+
+- **The deadline: 2027-12-11.** Homebrew's 7.0.0 announcement lists "Third-party formula `post_install` and cask flight blocks" as deprecated until 2027-12-11, and says "third-party taps receive warnings until 11 December 2027" ([brew.sh 7.0.0 post](https://github.com/Homebrew/brew.sh/blob/main/_posts/2026-09-13-homebrew-7.0.0.md), lines 33 and 225). The code passes no date (`odeprecated` in `Library/Homebrew/cask/dsl.rb:863` at 7.0.10). Homebrew's policy is to disable only at a minor or major release (`docs/Deprecating-Disabling-and-Removing.md`), so expect the break at the first one on or after that date.
+- **The replacement keeps quarantine removal.** `postflight_steps` has a `run` step, "run one executable with literal arguments" (`docs/Cask-Cookbook.md:632` at 7.0.10). It accepts the `{{staged_path}}` token, and a failing step aborts the install unless it has `must_succeed: false`. Homebrew always quarantines cask downloads (`--no-quarantine` was removed in 6.0.14), so this step stays the cask's only route.
+- **When GoReleaser v2.19.0 is released: switch all three repos' casks.** GoReleaser 2.18.3 can only write Ruby blocks. `install_steps` was merged in [goreleaser#6873](https://github.com/goreleaser/goreleaser/pull/6873) on 2026-10-12, after 2.18.3, and the maintainer said "fix will come on v2.19" ([goreleaser#6870](https://github.com/goreleaser/goreleaser/issues/6870)). Each repository's session makes its own change:
+  - bump the pinned GoReleaser everywhere it appears: here, `ci.yml`, `release.yml` (both jobs), `smoke.yml` and the `make release-check` pin, with each download's checksum;
+  - replace `hooks.post.install` with `hooks.post.install_steps`, an `on_macos` `run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/<binary>"], must_succeed: false`;
+  - check every key against `goreleaser jsonschema` at the new pin;
+  - confirm the smoke brew channel still finds no quarantine flag on any binary, and the warning is gone.
+- **Notarization is not needed for this.** It would be needed only if Homebrew dropped the `run` route. It would also change the publish phase: a signature with a fresh timestamp makes darwin archives differ on every rebuild, so the byte-identical comparison would need redesigning first.
 
 ## Checking it locally
 

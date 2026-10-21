@@ -285,7 +285,10 @@ The top 5 make up the executive summary. Every entry carries its source tool, it
 1. Both tools are unreleased and private (C1). Halotrcer's release is blocked on two other repositories' owner-gated releases.
 2. Shared `gh-pages` races across three products. The concurrency group is per repository, so only `publish-repos.sh`'s fetch, rebuild and retry protects against them. The tests prove it with a fake `git`.
 3. The two toolchains diverge, Tokvera on 1.27 and Sievant on 1.26. That doesn't matter at run time, since the tools are separate binaries, but govulncheck must run under Halotrcer's own pinned toolchain, never this machine's `go1.27.1-X:nodwarf5`. `make toolchain-check` refuses it.
-4. This machine is shared with other sessions. Snapshot builds, Docker, kind, `smoke-local` and building the tools for fixtures (D1) all wait for your go-ahead.
+4. Homebrew deprecates Ruby cask flight blocks, the `postflight` that removes quarantine in all three repos' casks. Third-party taps get warnings until 2027-12-11 ([brew.sh 7.0.0 post](https://github.com/Homebrew/brew.sh/blob/main/_posts/2026-09-13-homebrew-7.0.0.md), lines 33 and 225). Two follow-ups (docs/releasing.md, "Homebrew cask hooks"):
+   - When GoReleaser v2.19.0 is released, each repo's session switches its casks to the declarative `run` step and bumps its pinned GoReleaser.
+   - Before the first release candidate, run the brew smoke once with `HOMEBREW_DEVELOPER=1` and record whether the warning becomes an error.
+5. This machine is shared with other sessions. Snapshot builds, Docker, kind, `smoke-local` and building the tools for fixtures (D1) all wait for your go-ahead.
 
 ## 6. Acceptance (reported as a table at each milestone's end)
 

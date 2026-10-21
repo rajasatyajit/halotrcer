@@ -12,7 +12,7 @@ Some checks need more than Go, so `make gates` doesn't run them:
 
 ## Where the Linux jobs run: `LINUX_RUNNER`
 
-The `ci` job (ci.yml) and smoke.yml's `snapshot` and `not-requested` jobs read a repository variable, `LINUX_RUNNER` (Settings → Secrets and variables → Actions → Variables):
+The `ci` job (ci.yml), smoke.yml's `snapshot` and `not-requested` jobs, and integration.yml's `integration` job read a repository variable, `LINUX_RUNNER` (Settings → Secrets and variables → Actions → Variables):
 
 ```yaml
 runs-on: ${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}
@@ -67,6 +67,14 @@ git curl tar gzip sha256sum awk sed grep openssl gpg docker docker-daemon
 ```
 grep sed head
 ```
+
+`integration` (integration.yml; kind, the package repositories and the installer images):
+
+```
+git make curl tar gzip sha256sum awk sed grep jq openssl gpg kubectl docker docker-daemon
+```
+
+`kubectl` comes from Kubernetes' package repository or its release binary; kind itself runs as `go run` at its pinned version.
 
 ## The smoke matrix (smoke.yml)
 

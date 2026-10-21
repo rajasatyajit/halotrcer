@@ -68,8 +68,8 @@ func TestSelfHostedRunnerRules(t *testing.T) {
 			}
 		}
 	}
-	if moved != 3 {
-		t.Errorf("%d jobs read LINUX_RUNNER, want 3 (ci; smoke's snapshot and not-requested; docs/development.md)", moved)
+	if moved != 4 {
+		t.Errorf("%d jobs read LINUX_RUNNER, want 4 (ci; smoke's snapshot and not-requested; integration; docs/development.md)", moved)
 	}
 }
 

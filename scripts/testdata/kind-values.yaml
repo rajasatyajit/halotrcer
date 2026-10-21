@@ -1,0 +1,48 @@
+# The umbrella chart's values for TestUmbrellaChartInKind (make helm-kind),
+# not shipped with the chart. Both tools on; Tokvera scans the simulator the
+# test runs in the cluster (the target is set on the command line); Sievant
+# runs its gateway with the mock connector, the minimal configuration
+# Sievant's own kind test uses (sievant charts/sievant/ci/gateway-values.yaml),
+# behind the TLS Secret halotrcer-kind-tls the test creates.
+tags:
+  tokvera: true
+  sievant: true
+tokvera:
+  scan:
+    confirm: true
+    model: tokvera-sim-fast
+sievant:
+  mode: gateway
+  gateway:
+    config:
+      inline: |
+        server:
+          transport: http
+          http:
+            listen_addr: "0.0.0.0:8443"
+            path: /mcp
+            tls: {mode: direct, cert_file: /etc/sievant/tls/tls.crt, key_file: /etc/sievant/tls/tls.key}
+          limits: {max_clients: 50, max_inflight_calls: 16, max_queued_calls: 16, call_timeout: 30s}
+        identity:
+          provider: api_key
+          agents: [{name: kind-agent}]
+          api_keys: [{agent: kind-agent, key_sha256: 1111111111111111111111111111111111111111111111111111111111111111}]
+        policies:
+          - agent: kind-agent
+            allow: [echo]
+        rate_limit:
+          default: {requests_per_second: 10, burst: 20}
+        sanitization:
+          hmac_key: ${SIEVANT_HMAC_KEY}
+        audit:
+          sink: local
+          local: {path: /var/lib/sievant/audit.db}
+        metrics:
+          listen_addr: "0.0.0.0:9090"
+        connectors:
+          mock: {}
+    tls:
+      existingSecret: halotrcer-kind-tls
+    autoscaling:
+      enabled: false
+    replicas: 1

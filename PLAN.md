@@ -214,7 +214,7 @@ Built (branch `m2-channels`):
 - Two of these are **VERIFY**:
   - **Mock LLM:** Tokvera's `testdata/mockllm` is test code in their repository, not a released binary. Proposal: use the released `tokvera sim serve`, which is a shipped command that serves the fake OpenAI-compatible API.
   - **Fixture MCP configs:** Sievant's fixture configs are not shipped. Halotrcer gets its own `testdata/mcp/` written to the same documented client format, with fake tokens.
-- `integration.yml` job `helm-kind` (D9; push to main, nightly, dispatch): install the umbrella chart with both components enabled, and wait for the Tokvera CronJob run and the Sievant gateway Deployment to be Ready.
+- `integration.yml` (D9; `workflow_dispatch` only, as both tools' integration.yml, for runner cost) runs `make helm-kind`, `make repos-check` and `make install-check`. `helm-kind`: install the umbrella chart with both components enabled, and wait for the Tokvera CronJob run and the Sievant gateway Deployment to be Ready.
 
 - **K1, the tools in the smoke matrix (owner, 2026-10-21): stand-ins now, real releases later.**
   - **Stand-ins.** Until `packaging/bundled-tools.env` pins both tools' releases, the smoke mirror serves Halotrcer-owned stand-ins named `tokvera` and `sievant` (`testdata/standin/`).

@@ -21,8 +21,8 @@ Halotrcer bundles two other releases, so it can only be released after both of t
 - [ ] **Private vulnerability reporting is on** (Settings → Code security → Private vulnerability reporting). SECURITY.md offers it as a reporting channel.
 - [ ] **The website serves what the docs promise:** `https://www.halotrcer.com/install.sh` and `/install.ps1` (the files from this release's tag, as for the tools' scripts) and `https://www.halotrcer.com/book`, where every report's footer links.
 - [ ] **The `LINUX_RUNNER` repository variable is deleted** before the repository is made public. Never use a self-hosted runner on a public repository: a pull request's workflow would run its author's code on that machine. The `runs-on` expression already ignores the variable on a public repository; deleting it keeps the settings honest. `release.yml` itself always runs on GitHub-hosted `ubuntu-24.04` (docs/development.md).
-- [ ] **The `release` environment exists,** with you as the required reviewer.
-- [ ] **These secrets are set** on `rajasatyajit/halotrcer`:
+- [ ] **The `release` environment exists,** with you as the required reviewer. Create it before the first tag: GitHub creates a missing environment the first time a job names it, with no protection rules.
+- [ ] **These secrets are environment secrets of `release`,** not repository secrets (delete the repository copies). Both jobs of `release.yml` run in that environment, and no other workflow uses a secret:
   - `PKG_GPG_KEY`: the shared Halotrcer Packages OpenPGP private key.
   - `PKG_GPG_PASSPHRASE`.
   - `PKG_APK_KEY`: Halotrcer's apk RSA private key, the private half of `packaging/keys/satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub`.
@@ -53,6 +53,50 @@ Halotrcer bundles two other releases, so it can only be released after both of t
    - the winget pull request passes validation;
    - `brew install --cask rajasatyajit/tap/halotrcer` installs all three;
    - the smoke matrix (`smoke.yml`, M4) is green for the tag. For a release candidate, you decide whether to run the macOS and Windows jobs: dispatch `smoke.yml` with `include_macos` and `include_windows` set to true. Both default to false, and then those jobs record `SKIP not requested (owner approves macOS/Windows runs per release candidate)`.
+
+## Why each phase is one job
+
+Every step that receives a secret runs in the `release` environment, after your approval. Each phase is one job:
+- the preflight checks are its first steps, not a separate unprotected job;
+- every check runs before anything is built, signed or uploaded.
+
+`TestReleaseWorkflow` holds this.
+
+Until 2026-10-21, `release.yml` had Tokvera's and Sievant's four-job layout: `draft-preflight`, then `draft`, and `publish-preflight`, then `publish`. The two preflight jobs ran outside the environment, and they were given the package-signing keys, the passphrase and (in `publish-preflight`) `PUBLISHER_TOKEN`, to check that the secrets are set and the keys match `packaging/keys/`. Anyone able to push a `v*` tag, or to publish a release, ran them without an approval. With the secrets moved into the environment, those jobs could no longer see them.
+
+### The change, for Tokvera's and Sievant's `release.yml`
+
+Halotrcer's `release.yml` and `scripts/release_workflow_test.go` are the worked example. The same edit applies to each tool:
+
+1. **Draft.** Delete the `draft-preflight` job and move its steps into `draft`:
+   - Give `draft` the preflight's `if: github.event_name == 'push'` and drop its `needs: draft-preflight`.
+   - Keep `draft`'s `environment: release` and its permissions.
+   - The steps, in order:
+     1. one checkout (`persist-credentials: false`, `fetch-depth: 0`);
+     2. the preflight's steps unchanged: `preflight.sh draft`, `write-keys.sh --check`, the Go setup, the tools the checks need, the bundled-artifact verification (Halotrcer only), and the gates;
+     3. then `draft`'s own steps after its checkout and Go setup, which are now duplicates. Drop any tool installer that already ran, such as a second `cosign-installer`.
+   - The timeout is the sum of the two (Halotrcer: 30 + 45 = 75 minutes).
+2. **Publish.** Delete `publish-preflight` and do the same with `publish`:
+   - Give `publish` the preflight's `if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')`, replacing its `needs:`.
+   - Make `preflight.sh publish` and `write-keys.sh --check` the steps straight after the checkout. A `TAG` that `publish` already sets in its job `env:` can come out of the step's `env:`.
+   - Add the preflight's timeout (Halotrcer: 10 + 45 = 55 minutes).
+3. **Nothing else moves.**
+   - No check is removed, and every secret stays in the step `env:` it was in.
+   - No step before the upload gets `GITHUB_TOKEN` or `GH_TOKEN`.
+   - The gates now run in a job that holds `contents: write` and `id-token: write`. That's the same tagged code the job then builds and signs. No step before the upload gets a token in its `env:`, and the checkout persists no credentials.
+   - Any "unprivileged preflight job" comment, such as the one in `write-keys.sh`, becomes "preflight steps".
+4. **The tests.** Change the workflow test to require:
+   - exactly two jobs, `draft` and `publish`, each with `environment: release` and the phase's `if:`;
+   - every job in `release.yml` in the environment;
+   - preflight as step 1 of each job and the keys check as step 2;
+   - in `draft`, the order preflight, keys, bundled chart, gates, build tools, write keys, `goreleaser release`;
+   - no `GITHUB_TOKEN` or `GH_TOKEN` in any draft step up to the gates.
+
+   Each rule should be checked by breaking it once: Halotrcer's test catches a job outside the environment, an extra secret-holding job, a token on the preflight step, a build tool installed before the preflight, and a step before the publish preflight.
+5. **Settings, per repository:**
+   - the `release` environment with the owner as required reviewer;
+   - the four secrets moved into it, with the repository copies deleted;
+   - optionally, a tag ruleset limiting who may create `v*` tags.
 
 ## Checking it locally
 

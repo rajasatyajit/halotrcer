@@ -53,7 +53,7 @@ These change the design. The brief's wording is kept in the requirements below w
   - Image `ghcr.io/rajasatyajit/halotrcer`; chart `oci://ghcr.io/rajasatyajit/charts/halotrcer`.
   - apk key `satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub`.
 - **D11:** the NOTICE copyright line is "Satyajit Rajaraman / Halotrcer".
-- **C12:** `toolchain go1.27.2`, golangci-lint v2.14.0, govulncheck v1.9.0, actionlint v1.7.12 and gitleaks v8.30.1. Each was checked against its upstream release page on 2026-10-20. **2026-10-21:** toolchain go1.27.3 (go.dev/dl), because govulncheck reports GO-2026-6809 (crypto/x509, fixed in go1.27.3) under go1.27.2. Pending the owner's confirmation; Tokvera still pins go1.27.2.
+- **C12:** `toolchain go1.27.2`, golangci-lint v2.14.0, govulncheck v1.9.0, actionlint v1.7.12 and gitleaks v8.30.1. Each was checked against its upstream release page on 2026-10-20. **2026-10-21:** toolchain go1.27.3 (go.dev/dl), because govulncheck reports GO-2026-6809 (crypto/x509, fixed in go1.27.3) under go1.27.2. Confirmed by the owner (2026-10-21); Tokvera still pins go1.27.2.
 
 ### Implementation decisions taken in M1 (approved 2026-10-21)
 
@@ -168,6 +168,7 @@ Built (branch `m2-channels`):
 - Mirror overrides: `HALOTRCER_INSTALL_DOWNLOAD_BASE` and `HALOTRCER_INSTALL_API_BASE`, https or loopback http only. Each tool is fetched from its own release with its own cosign identity regexp, as in each tool's script.
 - OS, arch, Rosetta and musl detection; signature then checksum (C7); idempotent; atomic install.
 - At the end it prints `halotrcer check --target <url>`.
+- `halotrcer doctor` recognizes the container image, as Tokvera's doctor does, and gives no install or update advice inside it (owner, 2026-10-21; found in the M2 image check).
 - PowerShell:
   - every native call goes through `Invoke-HalotrcerNative` (Process-based, safe on 5.1 when stderr is written);
   - every script-scope variable is `$script:Halotrcer*`;

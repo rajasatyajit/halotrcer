@@ -20,7 +20,14 @@ ACTIONLINT  ?= $(STOCK_GO) run github.com/rhysd/actionlint/cmd/actionlint@v1.7.1
 SHELLCHECK_IMAGES := koalaman/shellcheck@sha256:f35e8987b02760d4e76fc99a68ad5c42cc10bb32f3dd2143a3cf92f1e5446a45 koalaman/shellcheck@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d
 SHELL_SCRIPTS = $(wildcard scripts/*.sh) $(wildcard scripts/ci/*.sh) $(wildcard scripts/smoke/*.sh) $(wildcard scripts/release/*.sh)
 
-.PHONY: build fmt-check vet test lint toolchain-check vuln secrets actionlint shellcheck gates release-check repos-check
+# The installer tests in containers (install-check): pwsh 7.1.5, the closest
+# Linux stand-in for Windows PowerShell 5.1's redirected-stderr-aborts
+# semantics, and 7.4 (the images Sievant's Makefile pins, by digest); and
+# Alpine for busybox sh (the image the shared-repository test pins).
+PWSH_IMAGES  := mcr.microsoft.com/powershell@sha256:f0b564c57d11a5761c3a1c47d9a83ed11722ba945ef2839605c760daf416913c mcr.microsoft.com/powershell@sha256:810c4f1e0c9d23022c3ec18c50a6205ee4b60766f1739d329b2948df1fd7d5b0
+ALPINE_IMAGE := alpine@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8
+
+.PHONY: build fmt-check vet test lint toolchain-check vuln secrets actionlint shellcheck gates release-check repos-check install-check
 
 build:
 	CGO_ENABLED=0 $(STOCK_GO) build -trimpath -ldflags '$(LDFLAGS)' -o $(BIN) ./cmd/halotrcer
@@ -87,3 +94,19 @@ release-check:
 # shared machine (CLAUDE.md).
 repos-check:
 	$(STOCK_GO) test -tags integration -count=1 -timeout 30m -run 'TestSharedRepositories|TestPublishReposRetriesARace' -v ./scripts/
+
+# install-check runs the installer tests where this machine lacks the
+# shells: install.ps1's under pwsh 7.1.5 and 7.4, install.sh's under each
+# image's sh and dash (when it has dash) and under Alpine's busybox. One
+# static test binary, built here, runs in every container (read-only mount;
+# the end-to-end test, which needs go, skips there and runs in make test).
+install-check:
+	@command -v docker >/dev/null || { echo "install-check: needs docker" >&2; exit 1; }
+	CGO_ENABLED=0 $(STOCK_GO) test -c -o bin/scripts.test ./scripts
+	@for img in $(PWSH_IMAGES); do \
+		echo "== $$img"; \
+		docker run --rm -v "$(CURDIR):/src:ro" -w /src/scripts $$img sh -c \
+			'pwsh -NoProfile -Command "\$$PSVersionTable.PSVersion.ToString()"; shells=sh; command -v dash >/dev/null && shells="sh dash"; echo "shells: $$shells"; HALOTRCER_TEST_SHELLS="$$shells" /src/bin/scripts.test -test.count=1 -test.run "TestPS1|TestInstall"' || exit 1; \
+	done
+	@echo "== $(ALPINE_IMAGE) (busybox)"
+	docker run --rm -v "$(CURDIR):/src:ro" -w /src/scripts -e HALOTRCER_TEST_SHELLS=busybox $(ALPINE_IMAGE) /src/bin/scripts.test -test.count=1 -test.run TestInstall

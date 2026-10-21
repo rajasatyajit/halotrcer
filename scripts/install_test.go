@@ -796,6 +796,9 @@ func TestInstallEndToEnd(t *testing.T) {
 	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
 		t.Skip("the fake release is linux/amd64")
 	}
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go not on PATH (make install-check runs this suite in containers without it)")
+	}
 	bin := filepath.Join(t.TempDir(), "halotrcer")
 	build := exec.CommandContext(t.Context(), "go", "build", "-trimpath", "-ldflags", "-X main.version="+instVersion+" -X main.commit=abc1234", "-o", bin, "../cmd/halotrcer")
 	build.Env = append(os.Environ(), "CGO_ENABLED=0")

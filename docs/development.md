@@ -36,7 +36,7 @@ Each job installs its own Go (`setup-go`, from go.mod's toolchain line), golangc
 `ci` (ci.yml):
 
 ```
-git make gcc curl wget tar gzip sha256sum awk sed grep base64 jq gpg openssl qpdf pdftotext dash busybox docker docker-daemon
+git make gcc curl wget tar gzip sha256sum awk sed grep base64 jq gpg openssl qpdf pdftotext dash busybox pwsh docker docker-daemon
 ```
 
 `docker-daemon` means `docker info` works for the runner's user: the daemon runs and the user is in the `docker` group. `make shellcheck` runs the digest-pinned shellcheck images.
@@ -45,6 +45,7 @@ On Ubuntu 24.04 these come from:
 
 - **Ubuntu packages:** `git make gcc curl wget tar gzip coreutils gawk sed grep jq gnupg openssl qpdf poppler-utils dash busybox-static` (the installer tests run install.sh under sh, dash and busybox, and through wget as well as curl).
 - **Docker:** Docker Engine (Docker's own install guide), with the runner's user added to the `docker` group.
+- **PowerShell:** `pwsh` from Microsoft's package repository or a release archive (the install.ps1 tests need it).
 
 Also needed:
 

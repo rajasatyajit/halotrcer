@@ -38,7 +38,9 @@ Halotrcer bundles two other releases, so it can only be released after both of t
 2. **Merge to `main`** with every gate green, CI included.
 3. **Run the smoke matrix on that commit.** With the tools pinned, `smoke.yml` runs in release mode: it downloads both tools' pinned releases, verifies them with cosign and `checksums.txt`, and scans `tokvera sim serve`. Dispatch it with `include_macos` and `include_windows` for a release candidate you'd ship, and dispatch `integration.yml` for kind. The tagged commit must be the one these passed on.
 4. **Tag a release candidate first.** Tag `vX.Y.Z-rc.1` on that commit and push the tag. It runs the whole pipeline, but stays off Homebrew, Scoop, winget and the package repositories. Fix whatever breaks (`-rc.2`, and so on), and only then tag `vX.Y.Z` on the same kind of green commit.
-5. **The draft phase runs.** It checks the tag's shape, that the repository is public, that the tag is on `origin/main`, the secrets, that the keys match `packaging/keys/`, and the pins. It verifies the pinned images and charts and builds the umbrella chart from them. Then it runs the gates, builds, signs, attests and uploads the draft.
+5. **The draft phase runs,** as two jobs:
+   1. `draft-gates`, unprivileged: it checks the pins, verifies the pinned images and charts, builds the umbrella chart from them, and runs the gates.
+   2. `draft`, after you approve it in the `release` environment: it checks the tag's shape, that the repository is public, that the tag is on `origin/main`, the secrets, and that the keys match `packaging/keys/`. Then it builds, signs, attests and uploads the draft.
 6. **Read the draft.** Check the archives, packages, SBOMs, `checksums.txt`, its `.sigstore.json` and the provenance bundle, then publish it.
 7. **The publish phase runs, in this order:**
    1. It verifies the published `checksums.txt`, then the bundled tools' images and charts, and builds the umbrella chart from them. Nothing is published before these pass.
@@ -54,45 +56,59 @@ Halotrcer bundles two other releases, so it can only be released after both of t
    - `brew install --cask rajasatyajit/tap/halotrcer` installs all three;
    - the smoke matrix (`smoke.yml`, M4) is green for the tag. For a release candidate, you decide whether to run the macOS and Windows jobs: dispatch `smoke.yml` with `include_macos` and `include_windows` set to true. Both default to false, and then those jobs record `SKIP not requested (owner approves macOS/Windows runs per release candidate)`.
 
-## Why each phase is one job
+## What runs where in `release.yml`
 
-Every step that receives a secret runs in the `release` environment, after your approval. Each phase is one job:
-- the preflight checks are its first steps, not a separate unprotected job;
-- every check runs before anything is built, signed or uploaded.
+Two rules shape the jobs:
+- **No secret outside the `release` environment.** Every step that receives a secret runs after your approval.
+- **No code that isn't ours in a job that can sign.** A job given `id-token: write` puts `ACTIONS_ID_TOKEN_REQUEST_URL` and `_TOKEN` in every step's environment, so any step in it can mint an OIDC token, and with it a keyless signature or provenance in Halotrcer's name. The race tests run dependency code, so no such job runs a test.
 
-`TestReleaseWorkflow` holds this.
+| Job | Environment | Permissions | Secrets | Runs |
+|---|---|---|---|---|
+| `draft-gates` (tag push) | none | `contents: read` | none | the bundled images and charts verified, the umbrella chart built from them (helm), the gates (`make vet`, `make test`, `make vuln`) |
+| `draft` (needs `draft-gates`) | `release` | `contents: write`, `id-token: write`, `attestations: write` | package keys, passphrase, `GITHUB_TOKEN` | preflight and the keys check first, then GoReleaser (build, sign, upload) and provenance. No test. |
+| `publish` (release published) | `release` | `contents: read`, `packages: write`, `id-token: write`, `attestations: write` | all four, `GITHUB_TOKEN` | preflight and the keys check first, then the verify, rebuild, compare and publish steps. No test. |
 
-Until 2026-10-21, `release.yml` had Tokvera's and Sievant's four-job layout: `draft-preflight`, then `draft`, and `publish-preflight`, then `publish`. The two preflight jobs ran outside the environment, and they were given the package-signing keys, the passphrase and (in `publish-preflight`) `PUBLISHER_TOKEN`, to check that the secrets are set and the keys match `packaging/keys/`. Anyone able to push a `v*` tag, or to publish a release, ran them without an approval. With the secrets moved into the environment, those jobs could no longer see them.
+Notes on the table:
+- **Nothing passes between the two draft jobs.** `draft` builds nothing from the umbrella chart; `draft-gates` builds it only to prove the pins work, and `publish` builds the one it pushes.
+- **GoReleaser only compiles.** It has no hooks and `CGO_ENABLED=0`, so it runs no code from this repository's packages or their dependencies. The image's Dockerfile only copies files.
+- **The privileged jobs still run our own release shell scripts** (`scripts/release/*.sh`), `helm` and `goreleaser`, all at the tagged commit.
+
+`TestReleaseWorkflow` holds the rules. It requires:
+- `draft-gates` with no secret, no `id-token` and no environment;
+- no job with `id-token` running a test step;
+- every job that names a secret in the `release` environment;
+- each privileged job's preflight as its first step after the checkout.
+
+Each rule was checked by breaking it:
+- a secret, `id-token: write`, or an environment added to `draft-gates`;
+- `go test`, or the gates step, moved into `draft`;
+- a secret-holding job outside the environment;
+- `draft` without its environment.
+
+### How it got here
+
+Until 2026-10-21, `release.yml` had Tokvera's and Sievant's layout: `draft-preflight`, then `draft`, and `publish-preflight`, then `publish`.
+- The preflight jobs ran outside the environment. They were given the package-signing keys, the passphrase and (in `publish-preflight`) `PUBLISHER_TOKEN`, to check that the secrets are set and the keys match `packaging/keys/`. Anyone able to push a `v*` tag or publish a release ran them without an approval, and once the secrets are environment secrets they can't see them at all.
+- The fix moves the secret-holding checks into the privileged jobs, and keeps the gates in an unprivileged job of their own.
 
 ### The change, for Tokvera's and Sievant's `release.yml`
 
-Halotrcer's `release.yml` and `scripts/release_workflow_test.go` are the worked example. The same edit applies to each tool:
+Both tools already run their gates in `draft-preflight`, a job without `id-token`. So the test half of this is already right there; only the secrets are in the wrong job.
 
-1. **Draft.** Delete the `draft-preflight` job and move its steps into `draft`:
-   - Give `draft` the preflight's `if: github.event_name == 'push'` and drop its `needs: draft-preflight`.
-   - Keep `draft`'s `environment: release` and its permissions.
-   - The steps, in order:
-     1. one checkout (`persist-credentials: false`, `fetch-depth: 0`);
-     2. the preflight's steps unchanged: `preflight.sh draft`, `write-keys.sh --check`, the Go setup, the tools the checks need, the bundled-artifact verification (Halotrcer only), and the gates;
-     3. then `draft`'s own steps after its checkout and Go setup, which are now duplicates. Drop any tool installer that already ran, such as a second `cosign-installer`.
-   - The timeout is the sum of the two (Halotrcer: 30 + 45 = 75 minutes).
-2. **Publish.** Delete `publish-preflight` and do the same with `publish`:
-   - Give `publish` the preflight's `if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')`, replacing its `needs:`.
-   - Make `preflight.sh publish` and `write-keys.sh --check` the steps straight after the checkout. A `TAG` that `publish` already sets in its job `env:` can come out of the step's `env:`.
-   - Add the preflight's timeout (Halotrcer: 10 + 45 = 55 minutes).
-3. **Nothing else moves.**
+Their version of the change:
+1. **Draft.**
+   - Take `preflight.sh draft` and `write-keys.sh --check` out of `draft-preflight`, and make them the first steps of `draft` after its checkout.
+   - What's left of `draft-preflight` (checkout, Go, the gates) names no secret. Renaming it `draft-gates` makes that plain, and `draft` keeps `needs:` on it.
+   - `draft` runs no test today (only `make toolchain-check`), and must stay that way.
+2. **Publish.**
+   - Delete `publish-preflight`. Make its two steps the first steps of `publish` after the checkout.
+   - Give `publish` the preflight's `if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')` in place of its `needs:`.
+   - Add the preflight's timeout to `publish`'s.
+   - `publish-preflight` runs no test, so nothing else moves.
+3. **What changes in practice.**
+   - The non-secret preflight checks (the tag's shape, a public repository, the tag on `origin/main`) now run after the gates and your approval, not before them. A bad tag costs one gates run before it's refused.
    - No check is removed, and every secret stays in the step `env:` it was in.
-   - No step before the upload gets `GITHUB_TOKEN` or `GH_TOKEN`.
-   - The gates now run in a job that holds `contents: write` and `id-token: write`. That's the same tagged code the job then builds and signs. No step before the upload gets a token in its `env:`, and the checkout persists no credentials.
-   - Any "unprivileged preflight job" comment, such as the one in `write-keys.sh`, becomes "preflight steps".
-4. **The tests.** Change the workflow test to require:
-   - exactly two jobs, `draft` and `publish`, each with `environment: release` and the phase's `if:`;
-   - every job in `release.yml` in the environment;
-   - preflight as step 1 of each job and the keys check as step 2;
-   - in `draft`, the order preflight, keys, bundled chart, gates, build tools, write keys, `goreleaser release`;
-   - no `GITHUB_TOKEN` or `GH_TOKEN` in any draft step up to the gates.
-
-   Each rule should be checked by breaking it once: Halotrcer's test catches a job outside the environment, an extra secret-holding job, a token on the preflight step, a build tool installed before the preflight, and a step before the publish preflight.
+4. **The tests.** Each tool's workflow test should require the same three rules as `TestReleaseWorkflow` (no secret, `id-token` or environment on the gates job; no test in a job with `id-token`; no secret outside the environment), plus preflight as each privileged job's first step. Break each rule once to see it caught.
 5. **Settings, per repository:**
    - the `release` environment with the owner as required reviewer;
    - the four secrets moved into it, with the repository copies deleted;

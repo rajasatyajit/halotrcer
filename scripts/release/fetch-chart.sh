@@ -17,10 +17,10 @@ ref="${1:?usage: fetch-chart.sh REGISTRY/REPO@sha256:DIGEST OUT.tgz}"
 out="${2:?usage: fetch-chart.sh REGISTRY/REPO@sha256:DIGEST OUT.tgz}"
 repo="${ref%@*}"
 digest="${ref#"$repo"@}"
-printf '%s\n' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$' && [ "$repo@$digest" = "$ref" ] || {
+if ! printf '%s\n' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$' || [ "$repo@$digest" != "$ref" ]; then
 	echo "fetch-chart.sh: $ref is not REGISTRY/REPO@sha256:<64 hex>" >&2
 	exit 2
-}
+fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT

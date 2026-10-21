@@ -42,10 +42,10 @@ media() { oras manifest fetch "$1" | jq -r '[.mediaType // "", .config.mediaType
 
 # check NAME IMAGE CHART IDENTITY
 check() {
-	[ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ] || {
+	if [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
 		echo "verify-bundled.sh: $file has no $1 image, chart or identity" >&2
 		exit 1
-	}
+	fi
 	case "$(media "$2")" in
 	"application/vnd.oci.image.index.v1+json "* | "application/vnd.docker.distribution.manifest.list.v2+json "*) ;;
 	*)

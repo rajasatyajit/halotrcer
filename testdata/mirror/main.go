@@ -18,11 +18,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -37,28 +37,36 @@ import (
 var tagRE = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?$`)
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, "mirror:", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	dist := flag.String("dist", "", "the snapshot directory")
 	urlFile := flag.String("url-file", "", "write the listening URL here")
 	addr := flag.String("addr", "127.0.0.1:0", "the address to listen on (loopback)")
 	flag.Parse()
 	if *dist == "" {
-		log.Fatal("mirror: --dist is required")
+		return errors.New("--dist is required")
 	}
-	ln, err := net.Listen("tcp", *addr)
+	ln, err := new(net.ListenConfig).Listen(context.Background(), "tcp", *addr)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	url := "http://" + ln.Addr().String()
 	if *urlFile != "" {
 		if err := os.WriteFile(*urlFile, []byte(url+"\n"), 0o600); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
-	log.Printf("mirror: serving %s at %s", *dist, url)
+	fmt.Fprintf(os.Stderr, "mirror: serving %s at %s\n", *dist, url)
 	srv := &http.Server{Handler: handler(*dist), ReadHeaderTimeout: 10 * time.Second}
 	if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
 func handler(dist string) http.Handler {
@@ -71,7 +79,8 @@ func handler(dist string) http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		http.ServeFile(w, r, filepath.Join(releases, repo, tag, file))
+		// Each element is checked above: one name, no separator, no "..".
+		http.ServeFile(w, r, filepath.Join(releases, repo, tag, file)) //nolint:gosec // G703: see above
 	})
 	mux.HandleFunc("/api/{repo}/releases", func(w http.ResponseWriter, r *http.Request) {
 		tags, ok := list(w, r, releases)

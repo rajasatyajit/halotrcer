@@ -121,6 +121,7 @@ try {
 }
 
 $mirrorProc = $null
+$simProc = $null
 try {
 	# --- The world: the mirror ----------------------------------------------------
 	$urlFile = Join-Path $work 'url'
@@ -245,17 +246,44 @@ try {
 	if ($v.ExitCode -ne 0 -or -not $got.StartsWith("halotrcer $smokeTag ")) { Fail "installed '$got' (exit $($v.ExitCode)), want halotrcer $smokeTag" }
 	Pass "installed $got"
 	$doc = Invoke-HalotrcerNative $bin @('doctor')
+	$smokeToolTags = @()
 	foreach ($p in @('tokvera', 'sievant')) {
-		if ($doc.StdOut -notmatch "(?m)^\[ok\] ${p}: v0\.2\.0 ") { Fail "doctor: $p is not v0.2.0 inside the matrix: $($doc.StdOut)" }
+		$t = (Get-ReleaseDir $p).Name # the snapshot's one release of the tool (v0.2.0 for the stand-ins)
+		if ($doc.StdOut -notmatch "(?m)^\[ok\] ${p}: $([regex]::Escape($t)) ") { Fail "doctor: $p is not $t inside the matrix: $($doc.StdOut)" }
+		$smokeToolTags += "$p $t"
 	}
-	Pass 'doctor: tokvera and sievant v0.2.0, inside the compatibility matrix'
+	Pass "doctor: $($smokeToolTags -join ' and '), inside the compatibility matrix"
 
 	# --- One check, and the combined report --------------------------------------------
 	# A planted API key: its value must reach no output (the name goes to Tokvera).
 	$canary = "sk-smoke-canary-$PID-not-a-key"
 	$env:SMOKE_CANARY_KEY = $canary
 	$out = Join-Path $work 'report'
-	$c = Invoke-HalotrcerNative $bin @('check', '--target', "$base/v1", '--yes', '--no-project', '--api-key-env', 'SMOKE_CANARY_KEY',
+	# The endpoint. The stand-ins replay fixtures and never contact it; the
+	# real Tokvera (release mode) scans Tokvera's own simulator, `tokvera sim
+	# serve`, run from its release archive for this machine (smoke.sh does
+	# the same).
+	$target = "$base/v1"
+	if ((Get-Content -LiteralPath (Join-Path $smokeDist 'TOOLS') -TotalCount 1) -eq 'release') {
+		$simDir = Join-Path $work 'sim'
+		$simZip = @(Get-ChildItem -LiteralPath (Get-ReleaseDir 'tokvera').FullName -Filter "tokvera_*_windows_$arch.zip")
+		if ($simZip.Count -ne 1) { Fail "want one tokvera windows/$arch archive, found $($simZip.Count)" }
+		Expand-Archive -LiteralPath $simZip[0].FullName -DestinationPath $simDir
+		$simLog = Join-Path $work 'sim.out'
+		$simProc = Start-Process -FilePath (Join-Path $simDir 'tokvera.exe') -PassThru -NoNewWindow `
+			-ArgumentList @('sim', 'serve', '--addr', '127.0.0.1:0') `
+			-RedirectStandardOutput $simLog -RedirectStandardError (Join-Path $work 'sim.err')
+		$deadline = (Get-Date).AddSeconds(15)
+		$simAddr = $null
+		while (-not $simAddr) {
+			if ((Get-Date) -gt $deadline) { Fail "tokvera sim serve did not start: $(Get-Content -Raw -LiteralPath (Join-Path $work 'sim.err') -ErrorAction SilentlyContinue)" }
+			$m = Select-String -LiteralPath $simLog -Pattern '^tokvera sim serve listening on (\S+)' -ErrorAction SilentlyContinue | Select-Object -First 1
+			if ($m) { $simAddr = $m.Matches[0].Groups[1].Value } else { Start-Sleep -Milliseconds 100 }
+		}
+		$target = "http://$simAddr/v1"
+		Say "scanning tokvera sim serve at $target"
+	}
+	$c = Invoke-HalotrcerNative $bin @('check', '--target', $target, '--yes', '--no-project', '--api-key-env', 'SMOKE_CANARY_KEY',
 		'--mcp-config', (Join-Path $smokeRepo 'testdata\mcp\smoke-mcp.json'), '--out', $out)
 	if ($c.ExitCode -ne 0) { Fail "check exited $($c.ExitCode): $($c.StdErr)" }
 	foreach ($f in @('report.html', 'report.pdf', 'report.json')) {
@@ -286,6 +314,7 @@ try {
 	Fail "unexpected error: $($_.Exception.Message) (at $($_.InvocationInfo.ScriptName):$($_.InvocationInfo.ScriptLineNumber))"
 } finally {
 	if ($mirrorProc -and -not $mirrorProc.HasExited) { Stop-Process -Id $mirrorProc.Id -Force -ErrorAction SilentlyContinue }
+	if ($simProc -and -not $simProc.HasExited) { Stop-Process -Id $simProc.Id -Force -ErrorAction SilentlyContinue }
 	Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
 }
 # Explicit: the result is the RESULT line above, never a native exit code a

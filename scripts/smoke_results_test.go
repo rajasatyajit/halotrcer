@@ -96,6 +96,11 @@ func TestSmokeHidesCosign(t *testing.T) {
 	writeFile(t, filepath.Join(bin, "beside-cosign"), "#!/bin/sh\nexit 0\n", 0o755)
 	writeFile(t, filepath.Join(dist, "TAG"), "v0.0.1-snapshot-test\n", 0o644)
 	writeFile(t, filepath.Join(dist, "TOOLS"), "stand-in\n", 0o644)
+	for _, d := range []string{"releases/tokvera/v0.2.0", "releases/sievant/v0.2.0"} {
+		if err := os.MkdirAll(filepath.Join(dist, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	arch := map[string]string{"amd64": "amd64", "arm64": "arm64"}[runtime.GOARCH]
 	if arch == "" {
 		t.Skip("unsupported test CPU")

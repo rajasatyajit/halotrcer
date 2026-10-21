@@ -7,7 +7,8 @@
 # testdata/mirror on loopback (the release mirror for halotrcer, Tokvera and
 # Sievant, and the signed package repositories), installs all three through
 # CHANNEL, then checks:
-#   - each binary runs and is the snapshot's (halotrcer) or v0.2.0 (the tools),
+#   - each binary runs and is the snapshot's (halotrcer) or the snapshot's
+#     one release of each tool (v0.2.0 for the stand-ins),
 #     and `halotrcer doctor` finds both tools inside the compatibility matrix;
 #   - `halotrcer check` writes the combined report (HTML, PDF and JSON) with
 #     both sections, no external resource, no <script>, and none of the
@@ -73,6 +74,7 @@ case "$(uname -m)" in x86_64 | amd64) arch=amd64 ;; aarch64 | arm64) arch=arm64 
 work="$(mktemp -d)"
 cleanup() {
 	if [ -n "${mirror_pid:-}" ]; then kill "$mirror_pid" 2>/dev/null || true; fi
+	if [ -n "${sim_pid:-}" ]; then kill "$sim_pid" 2>/dev/null || true; fi
 	rm -rf "$work" 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -127,6 +129,8 @@ export HALOTRCER_INSTALL_API_BASE="$base/api"
 say "mirror at $base (halotrcer $tag$label)"
 
 rel() { printf '%s/releases/%s\n' "$dist" "$1"; } # rel REPO -> its releases directory
+tok_tag="$(ls "$dist/releases/tokvera")" # the one tag the snapshot holds for each tool
+siv_tag="$(ls "$dist/releases/sievant")"
 one() { # one GLOB: exactly one file
 	# shellcheck disable=SC2086 # the glob is expanded on purpose
 	set -- $1
@@ -214,6 +218,12 @@ apt-repo)
 yum-repo)
 	[ -f "$dist/repo/rpm/repodata/repomd.xml.asc" ] || fail "the snapshot has no signed yum repository"
 	cp "$dist/repo-key.asc" "$work/repo-key.asc"
+	keys="file://$work/repo-key.asc"
+	# Release mode: the tools' rpms carry their real signatures, by the shared key.
+	if [ -f "$dist/packages-key.asc" ]; then
+		cp "$dist/packages-key.asc" "$work/packages-key.asc"
+		keys="$keys file://$work/packages-key.asc"
+	fi
 	repofile() { # GPGKEY
 		printf '[halotrcer]\nname=Halotrcer\nbaseurl=%s/repo/rpm\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=%s\n' "$base" "$1" | as_root tee /etc/yum.repos.d/halotrcer.repo >/dev/null
 	}
@@ -224,7 +234,7 @@ yum-repo)
 	grep -Eqi 'gpg|key|signature' "$work/dnf-nokey.log" ||
 		fail "dnf: refused the repository for another reason: $(tail -n 5 "$work/dnf-nokey.log")"
 	pass "dnf refused the repository without its signing key"
-	repofile "file://$work/repo-key.asc"
+	repofile "$keys"
 	as_root dnf install -y --disablerepo='*' --enablerepo=halotrcer halotrcer >"$work/dnf.log" 2>&1 ||
 		fail "dnf: install from the signed repository failed: $(tail -n 5 "$work/dnf.log")"
 	rpm -q tokvera sievant >/dev/null || fail "dnf: tokvera and sievant did not come with halotrcer"
@@ -291,7 +301,7 @@ image)
 	[ "$(docker image inspect -f '{{.Config.User}}' "$img")" = "65532:65532" ] || fail "image: the image does not run as 65532:65532"
 	pass "the image runs as 65532:65532"
 	docker run --rm "$img" doctor >"$work/image-doctor.txt" 2>&1 || true
-	grep -q "tokvera: v0.2.0 at /usr/bin/tokvera (in the container image)" "$work/image-doctor.txt" ||
+	grep -q "tokvera: $tok_tag at /usr/bin/tokvera (in the container image)" "$work/image-doctor.txt" ||
 		fail "image: doctor does not see tokvera as part of the image: $(cat "$work/image-doctor.txt")"
 	if grep -q "halotrcer install" "$work/image-doctor.txt"; then
 		fail "image: doctor gives install advice inside the image"
@@ -333,10 +343,10 @@ fi
 pass "installed $got"
 if [ "$channel" != image ]; then
 	"$bin" doctor >"$work/doctor.txt" 2>&1 || true
-	for p in tokvera sievant; do
-		grep -q "^\[ok\] $p: v0.2.0 " "$work/doctor.txt" || fail "doctor: $p is not v0.2.0 inside the matrix: $(cat "$work/doctor.txt")"
+	for pv in "tokvera $tok_tag" "sievant $siv_tag"; do
+		grep -q "^\[ok\] ${pv% *}: ${pv#* } " "$work/doctor.txt" || fail "doctor: ${pv% *} is not ${pv#* } inside the matrix: $(cat "$work/doctor.txt")"
 	done
-	pass "doctor: tokvera and sievant v0.2.0, inside the compatibility matrix"
+	pass "doctor: tokvera $tok_tag and sievant $siv_tag, inside the compatibility matrix"
 fi
 
 # --- One check, and the combined report --------------------------------------------
@@ -344,7 +354,26 @@ fi
 SMOKE_CANARY_KEY="sk-smoke-canary-$$-not-a-key"
 export SMOKE_CANARY_KEY
 out="$work/report"
-"$bin" check --target "$base/v1" --yes --no-project --api-key-env SMOKE_CANARY_KEY \
+# The endpoint. The stand-ins replay fixtures and never contact it (nor does
+# halotrcer itself); the real Tokvera (release mode) scans Tokvera's own
+# simulator, `tokvera sim serve`, run from its release archive for this
+# machine, so every channel, the image's included, scans the same server.
+target="$base/v1"
+if [ "$(cat "$dist/TOOLS")" = release ]; then
+	mkdir -p "$work/sim"
+	tar -xzf "$(one "$(rel tokvera)/*/tokvera_*_${os}_$arch.tar.gz")" -C "$work/sim" tokvera
+	"$work/sim/tokvera" sim serve --addr 127.0.0.1:0 >"$work/sim.log" 2>&1 &
+	sim_pid=$!
+	i=0
+	while ! grep -q '^tokvera sim serve listening on ' "$work/sim.log"; do
+		i=$((i + 1))
+		[ "$i" -le 100 ] || fail "tokvera sim serve did not start: $(cat "$work/sim.log")"
+		sleep 0.1
+	done
+	target="http://$(sed -n 's/^tokvera sim serve listening on \([^ ]*\).*/\1/p' "$work/sim.log")/v1"
+	say "scanning tokvera sim serve at $target"
+fi
+"$bin" check --target "$target" --yes --no-project --api-key-env SMOKE_CANARY_KEY \
 	--mcp-config "$repo/testdata/mcp/smoke-mcp.json" --out "$out" >"$work/check.log" 2>&1 ||
 	fail "check failed: $(tail -n 20 "$work/check.log")"
 for f in report.html report.pdf report.json; do

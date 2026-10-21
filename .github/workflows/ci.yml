@@ -5,6 +5,7 @@
 #
 # Permissions: contents: read for the whole workflow; no job needs more.
 # Every checkout sets persist-credentials: false.
+
 name: ci
 
 on:
@@ -42,13 +43,25 @@ env:
 
 jobs:
   ci:
-    runs-on: ubuntu-24.04
+    # LINUX_RUNNER (a repository variable) moves the job to the owner's
+    # self-hosted runner; unset = GitHub-hosted. It applies only while the
+    # repository is private: a public repository never runs on a self-hosted
+    # runner, even if the variable is left behind (docs/development.md).
+    runs-on: ${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0          # gitleaks scans the whole history
           persist-credentials: false
+
+      # GitHub's image has every host tool this job and its tests use, once
+      # the PDF checkers are installed below; a self-hosted runner must have
+      # them all, or tests that skip without a tool would pass while testing
+      # less. docs/development.md has the packages.
+      - name: Runner tools (self-hosted only)
+        if: runner.environment == 'self-hosted'
+        run: sh scripts/ci/runner-tools.sh git make gcc curl tar gzip sha256sum awk sed grep base64 jq gpg openssl qpdf pdftotext docker docker-daemon
 
       - name: Go version from go.mod's toolchain line
         id: go
@@ -89,7 +102,10 @@ jobs:
           tar xzf "$f" -C "$dir" --strip-components=1 linux-amd64/helm
           echo "$dir" >> "$GITHUB_PATH"
 
+      # GitHub's image lacks them; a self-hosted runner has them already
+      # (checked above), so nothing there needs sudo.
       - name: Install PDF checkers
+        if: runner.environment != 'self-hosted'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq qpdf poppler-utils
 
       - name: Tool versions

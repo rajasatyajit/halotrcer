@@ -18,7 +18,7 @@ ACTIONLINT  ?= $(STOCK_GO) run github.com/rhysd/actionlint/cmd/actionlint@v1.7.1
 # shellcheck at the CI runner's version (v0.9.0) and the current one
 # (v0.11.0), pinned by image digest as Sievant does (its Makefile:109).
 SHELLCHECK_IMAGES := koalaman/shellcheck@sha256:f35e8987b02760d4e76fc99a68ad5c42cc10bb32f3dd2143a3cf92f1e5446a45 koalaman/shellcheck@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d
-SHELL_SCRIPTS = $(wildcard scripts/*.sh) $(wildcard scripts/smoke/*.sh) $(wildcard scripts/release/*.sh)
+SHELL_SCRIPTS = $(wildcard scripts/*.sh) $(wildcard scripts/ci/*.sh) $(wildcard scripts/smoke/*.sh) $(wildcard scripts/release/*.sh)
 
 .PHONY: build fmt-check vet test lint toolchain-check vuln secrets actionlint shellcheck gates release-check repos-check
 

@@ -60,8 +60,9 @@ func stepIndex(t *testing.T, job workflowJob, sub string) int {
 
 // TestWorkflowRules applies CLAUDE.md's CI rules to every workflow: actions
 // pinned by full commit SHA with the release in a comment, every checkout
-// without persisted credentials, jobs on ubuntu-24.04, and no ${{ }}
-// expression inside a run: script (inputs reach scripts through env:).
+// without persisted credentials, and no ${{ }} expression inside a run:
+// script (inputs reach scripts through env:). Runners are
+// TestSelfHostedRunnerRules'.
 func TestWorkflowRules(t *testing.T) {
 	files, err := filepath.Glob("../.github/workflows/*.yml")
 	if err != nil || len(files) == 0 {
@@ -78,9 +79,6 @@ func TestWorkflowRules(t *testing.T) {
 			}
 		}
 		for jn, j := range w.Jobs {
-			if j.RunsOn != "ubuntu-24.04" {
-				t.Errorf("%s/%s runs on %v, want ubuntu-24.04", name, jn, j.RunsOn)
-			}
 			for _, s := range j.Steps {
 				if strings.Contains(s.Run, "${{") {
 					t.Errorf("%s/%s step %q has ${{ }} inside run:", name, jn, s.Name)

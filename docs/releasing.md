@@ -17,6 +17,7 @@ Halotrcer bundles two other releases, so it can only be released after both of t
 - [ ] **Tokvera and Sievant are released.** Each has a published release in the compatibility matrix (`internal/compat/matrix.json`, currently `>=0.2.0 <0.3.0`), with its image and chart pushed.
 - [ ] **For a stable Halotrcer release:** both tools' winget manifests are merged into `microsoft/winget-pkgs`. winget-pkgs validation refuses a manifest whose dependencies are not in the catalog yet.
 - [ ] **The repository is public.** The preflight refuses a private one: attestations need it, and every channel downloads release assets without credentials.
+- [ ] **The `LINUX_RUNNER` repository variable is deleted** before the repository is made public. Never use a self-hosted runner on a public repository: a pull request's workflow would run its author's code on that machine. The `runs-on` expression already ignores the variable on a public repository; deleting it keeps the settings honest. `release.yml` itself always runs on GitHub-hosted `ubuntu-24.04` (docs/development.md).
 - [ ] **The `release` environment exists,** with you as the required reviewer.
 - [ ] **These secrets are set** on `rajasatyajit/halotrcer`:
   - `PKG_GPG_KEY`: the shared Halotrcer Packages OpenPGP private key.
@@ -47,7 +48,7 @@ Halotrcer bundles two other releases, so it can only be released after both of t
 7. **Check the results:**
    - the winget pull request passes validation;
    - `brew install --cask rajasatyajit/tap/halotrcer` installs all three;
-   - the smoke matrix (`smoke.yml`, M4) is green for the tag.
+   - the smoke matrix (`smoke.yml`, M4) is green for the tag. For a release candidate, you decide whether to run the macOS and Windows jobs: dispatch `smoke.yml` with `include_macos` and `include_windows` set to true. Both default to false, and then those jobs record `SKIP: not requested (owner approves macOS/Windows runs per release candidate)`.
 
 ## Checking it locally
 

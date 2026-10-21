@@ -10,8 +10,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -134,15 +136,31 @@ func Run(ctx context.Context, e Env) *Report {
 	if st, err := install.LoadState(sp); err != nil {
 		r.add("state", Fail, "cannot read "+sp+": "+err.Error(), "remove the file; halotrcer will not uninstall tools it has no record of")
 	} else {
-		var names []string
-		for n, rec := range st.Tools {
-			names = append(names, n+" ("+rec.Channel+")")
+		// A record outlives a tool someone deleted by hand: say so rather
+		// than report it as installed.
+		var names, missing []string
+		for _, n := range slices.Sorted(maps.Keys(st.Tools)) {
+			rec := st.Tools[n]
+			if where, ok := onDisk(e, n, rec); ok {
+				names = append(names, n+" ("+rec.Channel+")")
+			} else {
+				names = append(names, n+" ("+rec.Channel+", recorded but missing"+where+")")
+				missing = append(missing, n)
+			}
 		}
 		detail := "Halotrcer installed: none"
 		if len(names) > 0 {
 			detail = "Halotrcer installed: " + strings.Join(names, ", ")
 		}
-		r.add("state", OK, detail+" ("+sp+")", "")
+		if len(missing) > 0 {
+			var fixes []string
+			for _, n := range missing {
+				fixes = append(fixes, "halotrcer install "+n)
+			}
+			r.add("state", Warn, detail+" ("+sp+")", strings.Join(fixes, "; "))
+		} else {
+			r.add("state", OK, detail+" ("+sp+")", "")
+		}
 	}
 	if f, err := os.CreateTemp(e.Cwd, ".halotrcer-doctor-*"); err != nil {
 		r.add("report directory", Warn, e.Cwd+" is not writable", "run halotrcer check with --out DIR")
@@ -153,6 +171,18 @@ func Run(ctx context.Context, e Env) *Report {
 	}
 	redactReport(r, e.Redactor)
 	return r
+}
+
+// onDisk reports whether the tool a state record names is still there: at
+// the recorded path, or, for a record without one, wherever Find looks. On
+// false, where is " at <path>" when a path was recorded.
+func onDisk(e Env, name string, rec install.Record) (where string, ok bool) {
+	if rec.Path != "" {
+		_, err := os.Stat(rec.Path)
+		return " at " + rec.Path, err == nil
+	}
+	_, err := e.Find(name)
+	return "", err == nil
 }
 
 func redactReport(r *Report, rd *redact.Redactor) {

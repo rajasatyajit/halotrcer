@@ -133,3 +133,66 @@ func TestDoctorInContainer(t *testing.T) {
 		t.Errorf("sievant: %+v", c)
 	}
 }
+
+// TestDoctorStateRecordedButMissing: a tool Halotrcer installed and someone
+// then deleted by hand is reported as recorded but missing, not installed.
+func TestDoctorStateRecordedButMissing(t *testing.T) {
+	home := t.TempDir()
+	bin := filepath.Join(home, ".local", "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	tok := filepath.Join(bin, "tokvera")
+	if err := os.WriteFile(tok, []byte("binary"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sys := install.System{OS: "linux", Home: home, Getenv: func(string) string { return "" },
+		LookPath: func(string) (string, error) { return "", errors.New("no") },
+		Run:      func(context.Context, string, ...string) (int, string) { return 1, "" }}
+	st := &install.State{Version: 1, Tools: map[string]install.Record{
+		"tokvera": {Channel: install.ChannelDirect, Path: tok},
+		"sievant": {Channel: install.ChannelBrew}, // no path: found through Find
+	}}
+	if err := st.Save(sys.StatePath()); err != nil {
+		t.Fatal(err)
+	}
+	brewed := true // sievant, as the package manager reports it
+	find := func(n string) (string, error) {
+		if n == "tokvera" {
+			if _, err := os.Stat(tok); err != nil {
+				return "", err
+			}
+			return tok, nil
+		}
+		if brewed {
+			return "/opt/homebrew/bin/sievant", nil
+		}
+		return "", errors.New("not installed")
+	}
+	state := func() Check {
+		t.Helper()
+		for _, c := range Run(context.Background(), Env{Find: find, Sys: sys, Cwd: t.TempDir()}).Checks {
+			if c.Name == "state" {
+				return c
+			}
+		}
+		t.Fatal("no state check")
+		return Check{}
+	}
+
+	c := state()
+	if c.Status != OK || !strings.Contains(c.Detail, "Halotrcer installed: sievant (brew), tokvera (direct) (") || c.Fix != "" {
+		t.Errorf("before: %+v", c)
+	}
+
+	// Both deleted by hand, behind Halotrcer's back.
+	if err := os.Remove(tok); err != nil {
+		t.Fatal(err)
+	}
+	brewed = false
+	c = state()
+	want := "Halotrcer installed: sievant (brew, recorded but missing), tokvera (direct, recorded but missing at " + tok + ") ("
+	if c.Status != Warn || !strings.Contains(c.Detail, want) || c.Fix != "halotrcer install sievant; halotrcer install tokvera" {
+		t.Errorf("after: %+v\nwant detail containing %q", c, want)
+	}
+}

@@ -1,0 +1,31 @@
+{
+  "checks": [
+    {
+      "name": "sievant",
+      "status": "info",
+      "detail": "v0.1.0-157-gd8a8bcf (commit d8a8bcf0694e), go1.26.9, at /home/fixtureuser/.local/bin/sievant"
+    },
+    {
+      "name": "config",
+      "status": "info",
+      "detail": "no configuration file: wrapped servers run under sievant proxy's defaults, or the policy file each was wrapped with"
+    },
+    {
+      "name": "state",
+      "status": "info",
+      "detail": "/home/fixtureuser/.local/state/sievant does not exist yet: the first call through a wrapped server creates it"
+    },
+    {
+      "name": "audit",
+      "status": "info",
+      "detail": "/home/fixtureuser/.local/state/sievant/audit.db: nothing audited yet (restart your MCP clients after sievant wrap, then use a tool)"
+    },
+    {
+      "name": "clients",
+      "status": "info",
+      "detail": "no MCP client configuration found (sievant scan --config \u003cfile\u003e reads one elsewhere)"
+    }
+  ],
+  "warnings": 0,
+  "failures": 0
+}

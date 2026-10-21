@@ -40,6 +40,7 @@ fmt-check:
 
 vet: fmt-check
 	$(STOCK_GO) vet ./...
+	$(STOCK_GO) vet ./testdata/standin/...  # ./... skips testdata/; the smoke snapshot builds these
 
 test:
 	$(STOCK_GO) test -race -count=1 ./...

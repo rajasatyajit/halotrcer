@@ -216,6 +216,13 @@ Built (branch `m2-channels`):
   - **Fixture MCP configs:** Sievant's fixture configs are not shipped. Halotrcer gets its own `testdata/mcp/` written to the same documented client format, with fake tokens.
 - `integration.yml` job `helm-kind` (D9; push to main, nightly, dispatch): install the umbrella chart with both components enabled, and wait for the Tokvera CronJob run and the Sievant gateway Deployment to be Ready.
 
+- **K1, the tools in the smoke matrix (owner, 2026-10-21): stand-ins now, real releases later.**
+  - **Stand-ins.** Until `packaging/bundled-tools.env` pins both tools' releases, the smoke mirror serves Halotrcer-owned stand-ins named `tokvera` and `sievant` (`testdata/standin/`).
+    - Each answers only the calls halotrcer makes (`version`, `doctor --json`, `scan`, Sievant's `report`). It replays the committed real fixtures byte for byte, and says on stderr that it is a stand-in.
+    - Each is packaged like the real tool: release archives with `checksums.txt`, deb, rpm and apk, a cask, a Scoop manifest and winget manifests. So every channel's dependency path runs now.
+    - Every RESULT line is labelled `(stand-in tools)`, and the stand-ins' version is `v0.2.0` with commit `standin`.
+  - **Real releases.** Once both tools' releases are pinned, the snapshot job downloads their real files instead, verified by checksum and cosign against each release's identity, and the label goes away. The mock LLM is then the released `tokvera sim serve` (the PLAN's VERIFY item). In stand-in mode no endpoint is needed: halotrcer never contacts the target itself.
+
 ### M5: docs
 
 - `README.md`, under 250 lines: what Halotrcer is, a one-line install, a one-line check, links to both tools, the privacy statement and `/book`.

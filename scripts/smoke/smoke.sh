@@ -98,7 +98,7 @@ rel() { printf '%s/releases/%s\n' "$dist" "$1"; } # rel REPO -> its releases dir
 one() { # one GLOB: exactly one file
 	# shellcheck disable=SC2086 # the glob is expanded on purpose
 	set -- $1
-	[ "$#" -eq 1 ] && [ -f "$1" ] || fail "want one file, found: $*"
+	if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then fail "want one file, found: $*"; fi
 	printf '%s\n' "$1"
 }
 as_root() { if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo "$@"; fi; }

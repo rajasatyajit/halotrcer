@@ -74,7 +74,7 @@ Parts, one commit each:
 1. **Skeleton.**
    - `go.mod` (toolchain pinned, C12), Apache-2.0 LICENSE and NOTICE, `.golangci.yml` (the tools' v2 config shape), Makefile targets `build vet test lint vuln toolchain-check secrets actionlint shellcheck gates`, and `.gitignore` and `.gitleaksignore`.
    - `ci.yml` with every gate (C10), on `${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}` (owner, 2026-10-21; docs/development.md), with SHA-pinned actions copied from the tools' pins and re-read from each action's releases page. `contents: read`, `persist-credentials: false`, and checksum-verified tool downloads.
-   - No telemetry: there is no network access except the scanned target, release downloads during install/update, and `doctor --check-update`.
+   - No telemetry: there is no network access except the scanned target, release downloads during install/update, and `update --check` (`doctor --check-update` was not built; docs/roadmap.md).
 2. **`internal/compat`.**
    - The embedded compatibility matrix (D2) and the version probes:
      - `tokvera version`: the first line on **stdout**, `tokvera vX.Y.Z (commit …)`.

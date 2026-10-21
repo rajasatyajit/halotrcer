@@ -16,7 +16,9 @@ Halotrcer bundles two other releases, so it can only be released after both of t
 
 - [ ] **Tokvera and Sievant are released.** Each has a published release in the compatibility matrix (`internal/compat/matrix.json`, currently `>=0.2.0 <0.3.0`), with its image and chart pushed.
 - [ ] **For a stable Halotrcer release:** both tools' winget manifests are merged into `microsoft/winget-pkgs`. winget-pkgs validation refuses a manifest whose dependencies are not in the catalog yet.
-- [ ] **The repository is public.** The preflight refuses a private one: attestations need it, and every channel downloads release assets without credentials.
+- [ ] **The repository is public** (it is, since 2026-10-21). The preflight refuses a private one: attestations need it, and every channel downloads release assets without credentials. Tokvera's and Sievant's repositories must be public too: `halotrcer install` and every package manager download their releases without credentials.
+- [ ] **Private vulnerability reporting is on** (Settings → Code security → Private vulnerability reporting). SECURITY.md offers it as a reporting channel.
+- [ ] **The website serves what the docs promise:** `https://www.halotrcer.com/install.sh` and `/install.ps1` (the files from this release's tag, as for the tools' scripts) and `https://www.halotrcer.com/book`, where every report's footer links.
 - [ ] **The `LINUX_RUNNER` repository variable is deleted** before the repository is made public. Never use a self-hosted runner on a public repository: a pull request's workflow would run its author's code on that machine. The `runs-on` expression already ignores the variable on a public repository; deleting it keeps the settings honest. `release.yml` itself always runs on GitHub-hosted `ubuntu-24.04` (docs/development.md).
 - [ ] **The `release` environment exists,** with you as the required reviewer.
 - [ ] **These secrets are set** on `rajasatyajit/halotrcer`:
@@ -33,10 +35,11 @@ Halotrcer bundles two other releases, so it can only be released after both of t
    - Both phases check that each image digest names an image index and each chart digest a Helm chart, and cosign-verify each against the identity of that tag's release workflow (`https://github.com/rajasatyajit/<tool>/.github/workflows/release.yml@refs/tags/vX.Y.Z`). An artifact signed for any other tag, or by anything else, is refused.
    - A stable Halotrcer tag must pin stable tool releases; a release candidate may pin release candidates.
 2. **Merge to `main`** with every gate green, CI included.
-3. **Tag `vX.Y.Z`** on that commit and push the tag.
-4. **The draft phase runs.** It checks the tag's shape, that the repository is public, that the tag is on `origin/main`, the secrets, that the keys match `packaging/keys/`, and the pins. It verifies the pinned images and charts and builds the umbrella chart from them. Then it runs the gates, builds, signs, attests and uploads the draft.
-5. **Read the draft.** Check the archives, packages, SBOMs, `checksums.txt`, its `.sigstore.json` and the provenance bundle, then publish it.
-6. **The publish phase runs, in this order:**
+3. **Run the smoke matrix on that commit.** With the tools pinned, `smoke.yml` runs in release mode: it downloads both tools' pinned releases, verifies them with cosign and `checksums.txt`, and scans `tokvera sim serve`. Dispatch it with `include_macos` and `include_windows` for a release candidate you'd ship, and dispatch `integration.yml` for kind. The tagged commit must be the one these passed on.
+4. **Tag a release candidate first.** Tag `vX.Y.Z-rc.1` on that commit and push the tag. It runs the whole pipeline, but stays off Homebrew, Scoop, winget and the package repositories. Fix whatever breaks (`-rc.2`, and so on), and only then tag `vX.Y.Z` on the same kind of green commit.
+5. **The draft phase runs.** It checks the tag's shape, that the repository is public, that the tag is on `origin/main`, the secrets, that the keys match `packaging/keys/`, and the pins. It verifies the pinned images and charts and builds the umbrella chart from them. Then it runs the gates, builds, signs, attests and uploads the draft.
+6. **Read the draft.** Check the archives, packages, SBOMs, `checksums.txt`, its `.sigstore.json` and the provenance bundle, then publish it.
+7. **The publish phase runs, in this order:**
    1. It verifies the published `checksums.txt`, then the bundled tools' images and charts, and builds the umbrella chart from them. Nothing is published before these pass.
    2. It rebuilds, and every archive must be byte-identical to the published one and carry phase 1's provenance.
    3. It pushes the image (halotrcer, tokvera and sievant), the cask, the Scoop manifest and the winget pull request.
@@ -45,10 +48,10 @@ Halotrcer bundles two other releases, so it can only be released after both of t
    6. For a stable tag only, it verifies the published deb and rpm packages and adds them to `rajasatyajit/packages` gh-pages:
       - it follows the shared repository contract;
       - it retries up to 3 times if Tokvera's or Sievant's publishing moves the branch.
-7. **Check the results:**
+8. **Check the results:**
    - the winget pull request passes validation;
    - `brew install --cask rajasatyajit/tap/halotrcer` installs all three;
-   - the smoke matrix (`smoke.yml`, M4) is green for the tag. For a release candidate, you decide whether to run the macOS and Windows jobs: dispatch `smoke.yml` with `include_macos` and `include_windows` set to true. Both default to false, and then those jobs record `SKIP: not requested (owner approves macOS/Windows runs per release candidate)`.
+   - the smoke matrix (`smoke.yml`, M4) is green for the tag. For a release candidate, you decide whether to run the macOS and Windows jobs: dispatch `smoke.yml` with `include_macos` and `include_windows` set to true. Both default to false, and then those jobs record `SKIP not requested (owner approves macOS/Windows runs per release candidate)`.
 
 ## Checking it locally
 

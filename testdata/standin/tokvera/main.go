@@ -48,7 +48,7 @@ func run(args []string) int {
 	switch args[0] {
 	case "version":
 		// The first line `tokvera version` prints (tokvera scripts/install.sh).
-		fmt.Printf("tokvera %s (commit standin)\n", version)
+		fmt.Fprintf(os.Stdout, "tokvera %s (commit standin)\n", version)
 		return 0
 	case "doctor":
 		_, _ = os.Stdout.Write(doctor)
@@ -64,11 +64,11 @@ func run(args []string) int {
 			fmt.Fprintln(os.Stderr, "tokvera scan: --out DIR is required by this stand-in")
 			return 2
 		}
-		if err := os.MkdirAll(out, 0o755); err != nil {
+		if err := os.MkdirAll(out, 0o750); err != nil { //nolint:gosec // G703: --out is the directory halotrcer chose for this run
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
-		if err := os.WriteFile(filepath.Join(out, "report.json"), report, 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(out, "report.json"), report, 0o600); err != nil { //nolint:gosec // G703: --out is the directory halotrcer chose for this run
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}

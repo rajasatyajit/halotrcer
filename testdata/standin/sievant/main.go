@@ -68,11 +68,11 @@ func run(args []string) int {
 			fmt.Fprintln(os.Stderr, "sievant report: --out DIR is required by this stand-in")
 			return 2
 		}
-		if err := os.MkdirAll(out, 0o755); err != nil {
+		if err := os.MkdirAll(out, 0o750); err != nil { //nolint:gosec // G703: --out is the directory halotrcer chose for this run
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
-		if err := os.WriteFile(filepath.Join(out, "sievant-report-standin.json"), report, 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(out, "sievant-report-standin.json"), report, 0o600); err != nil { //nolint:gosec // G703: --out is the directory halotrcer chose for this run
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}

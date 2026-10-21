@@ -47,7 +47,7 @@ test:
 
 lint:
 	@v="$$(golangci-lint version 2>&1)"; case "$$v" in *"version $(GOLANGCI_LINT_VERSION) "*) ;; *) echo "lint: need golangci-lint $(GOLANGCI_LINT_VERSION), have: $$v" >&2; exit 1;; esac
-	GOTOOLCHAIN=$(TOOLCHAIN) golangci-lint run ./...
+	GOTOOLCHAIN=$(TOOLCHAIN) golangci-lint run ./... ./testdata/standin/...
 
 # Refuses anything but the stock release named on go.mod's toolchain line
 # (an X: experiment build, a distro build, or another version).

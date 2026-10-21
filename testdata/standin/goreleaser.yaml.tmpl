@@ -1,0 +1,123 @@
+# GoReleaser config for a smoke-matrix STAND-IN (PLAN.md M4, K1). It is not
+# Tokvera's or Sievant's config, and the release it makes is never published:
+# scripts/smoke/snapshot.sh renders it for @TOOL@ (sed over the @...@ names),
+# runs `goreleaser release --snapshot` with it, and serves the result from the
+# smoke mirror. The names follow the real tool's release, so every channel
+# finds what it would find there:
+#   archives  @TOOL@_<version>_<os>_<arch>.tar.gz (.zip on Windows), checksums.txt
+#   packages  deb, rpm and apk named @TOOL@, the apk signed under the real key name
+#   cask      @TOOL@ (rajasatyajit/tap), Scoop @TOOL@, winget @WINGET@
+# The version is fixed at 0.2.0, inside the compatibility matrix.
+version: 2
+
+project_name: @TOOL@
+
+dist: @DIST@
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+snapshot:
+  version_template: "0.2.0"
+
+builds:
+  - id: @TOOL@
+    main: ./testdata/standin/@TOOL@
+    binary: @TOOL@
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version=v{{ .Version }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: @TOOL@
+    ids: [@TOOL@]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - src: LICENSE
+        info:
+          mtime: "{{ .CommitDate }}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+nfpms:
+  - id: packages
+    ids: [@TOOL@]
+    package_name: @TOOL@
+    file_name_template: "{{ .ConventionalFileName }}"
+    formats: [deb, rpm, apk]
+    vendor: rajasatyajit
+    homepage: https://github.com/rajasatyajit/halotrcer
+    maintainer: Satyajit Rajaraman <satyajit.rajaraman@halotrcer.com>
+    description: STAND-IN for @TOOL@ in Halotrcer's smoke matrix; replays recorded outputs. Not @TOOL@.
+    license: Apache-2.0
+    bindir: /usr/bin
+    mtime: "{{ .CommitDate }}"
+    deb:
+      signature:
+        key_file: '{{ .Env.PKG_GPG_KEY_FILE }}'
+    rpm:
+      signature:
+        key_file: '{{ .Env.PKG_GPG_KEY_FILE }}'
+    apk:
+      signature:
+        key_file: '{{ .Env.PKG_APK_KEY_FILE }}'
+        key_name: satyajit.rajaraman@halotrcer.com-@TOOL@.rsa.pub
+
+homebrew_casks:
+  - name: @TOOL@
+    ids: [@TOOL@]
+    homepage: https://github.com/rajasatyajit/halotrcer
+    description: STAND-IN for @TOOL@ (Halotrcer smoke matrix)
+    url:
+      template: "https://github.com/rajasatyajit/@REPO@/releases/download/{{ urlPathEscape .Tag }}/{{ .ArtifactName }}"
+    skip_upload: true
+    repository:
+      owner: rajasatyajit
+      name: homebrew-tap
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/@TOOL@"]
+          end
+
+scoops:
+  - name: @TOOL@
+    ids: [@TOOL@]
+    description: STAND-IN for @TOOL@ (Halotrcer smoke matrix)
+    homepage: https://github.com/rajasatyajit/halotrcer
+    license: Apache-2.0
+    url_template: "https://github.com/rajasatyajit/@REPO@/releases/download/{{ urlPathEscape .Tag }}/{{ .ArtifactName }}"
+    skip_upload: true
+    repository:
+      owner: rajasatyajit
+      name: scoop-bucket
+
+winget:
+  - name: @TOOL@
+    ids: [@TOOL@]
+    publisher: Halotrcer
+    package_identifier: @WINGET@
+    short_description: STAND-IN for @TOOL@ (Halotrcer smoke matrix)
+    license: Apache-2.0
+    homepage: https://github.com/rajasatyajit/halotrcer
+    url_template: "https://github.com/rajasatyajit/@REPO@/releases/download/{{ urlPathEscape .Tag }}/{{ .ArtifactName }}"
+    skip_upload: true
+    repository:
+      owner: rajasatyajit
+      name: winget-pkgs
+
+release:
+  disable: true

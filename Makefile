@@ -40,14 +40,14 @@ fmt-check:
 
 vet: fmt-check
 	$(STOCK_GO) vet ./...
-	$(STOCK_GO) vet ./testdata/standin/...  # ./... skips testdata/; the smoke snapshot builds these
+	$(STOCK_GO) vet ./testdata/standin/... ./testdata/mirror  # ./... skips testdata/; the smoke snapshot builds these
 
 test:
 	$(STOCK_GO) test -race -count=1 ./...
 
 lint:
 	@v="$$(golangci-lint version 2>&1)"; case "$$v" in *"version $(GOLANGCI_LINT_VERSION) "*) ;; *) echo "lint: need golangci-lint $(GOLANGCI_LINT_VERSION), have: $$v" >&2; exit 1;; esac
-	GOTOOLCHAIN=$(TOOLCHAIN) golangci-lint run ./... ./testdata/standin/...
+	GOTOOLCHAIN=$(TOOLCHAIN) golangci-lint run ./... ./testdata/standin/... ./testdata/mirror
 
 # Refuses anything but the stock release named on go.mod's toolchain line
 # (an X: experiment build, a distro build, or another version).

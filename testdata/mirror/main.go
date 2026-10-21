@@ -4,7 +4,7 @@
 // every repository the snapshot holds, and the signed apt and yum
 // repositories.
 //
-//	mirror --dist DIR [--url-file FILE] [--addr 127.0.0.1:0]
+//	mirror --dist DIR [--url-file FILE] [--addr 127.0.0.1:0] [--latest REPO=TAG ...]
 //
 // DIR is scripts/smoke/snapshot.sh's output:
 //
@@ -12,8 +12,10 @@
 //	                                   and listed at /api/<repo>/releases[/latest]
 //	DIR/repo/...                       served at /repo/...
 //
-// "latest" is the highest stable tag (GitHub's latest skips prereleases);
-// a tag with a "-" is a prerelease. The listening URL is written to FILE once
+// "latest" is the highest stable tag (GitHub's latest skips prereleases),
+// unless --latest names it: a snapshot's tag (v0.0.1-snapshot-<commit>) looks
+// like a prerelease, and stands for the latest release in the smoke matrix.
+// A tag with a "-" is listed as a prerelease. The listening URL is written to FILE once
 // the server accepts connections. Every request is logged on stderr.
 package main
 
@@ -47,6 +49,15 @@ func run() error {
 	dist := flag.String("dist", "", "the snapshot directory")
 	urlFile := flag.String("url-file", "", "write the listening URL here")
 	addr := flag.String("addr", "127.0.0.1:0", "the address to listen on (loopback)")
+	latest := map[string]string{}
+	flag.Func("latest", "REPO=TAG: the tag /api/REPO/releases/latest names (repeatable)", func(v string) error {
+		repo, tag, ok := strings.Cut(v, "=")
+		if !ok || !safe(repo) || !tagRE.MatchString(tag) {
+			return fmt.Errorf("--latest %q: want REPO=vX.Y.Z[-pre]", v)
+		}
+		latest[repo] = tag
+		return nil
+	})
 	flag.Parse()
 	if *dist == "" {
 		return errors.New("--dist is required")
@@ -62,14 +73,14 @@ func run() error {
 		}
 	}
 	fmt.Fprintf(os.Stderr, "mirror: serving %s at %s\n", *dist, url)
-	srv := &http.Server{Handler: handler(*dist), ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Handler: handler(*dist, latest), ReadHeaderTimeout: 10 * time.Second}
 	if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 	return nil
 }
 
-func handler(dist string) http.Handler {
+func handler(dist string, latest map[string]string) http.Handler {
 	releases := filepath.Join(dist, "releases")
 	mux := http.NewServeMux()
 	mux.Handle("/repo/", http.StripPrefix("/repo/", http.FileServer(http.Dir(filepath.Join(dist, "repo")))))
@@ -96,6 +107,10 @@ func handler(dist string) http.Handler {
 	mux.HandleFunc("/api/{repo}/releases/latest", func(w http.ResponseWriter, r *http.Request) {
 		tags, ok := list(w, r, releases)
 		if !ok {
+			return
+		}
+		if t, ok := latest[r.PathValue("repo")]; ok {
+			writeJSON(w, map[string]any{"tag_name": t})
 			return
 		}
 		for _, t := range tags {

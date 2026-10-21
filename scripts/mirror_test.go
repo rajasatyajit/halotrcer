@@ -30,7 +30,7 @@ func TestMirror(t *testing.T) {
 		writeFile(t, filepath.Join(dist, f), "body of "+f, 0o644)
 	}
 	urlFile := filepath.Join(t.TempDir(), "url")
-	cmd := exec.CommandContext(t.Context(), bin, "--dist", dist, "--url-file", urlFile)
+	cmd := exec.CommandContext(t.Context(), bin, "--dist", dist, "--url-file", urlFile, "--latest", "halotrcer=v1.2.3-snapshot-abc1234")
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -70,6 +70,9 @@ func TestMirror(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &rels); code != 200 || err != nil || len(rels) != 3 ||
 		rels[0].Tag != "v0.3.0-rc.1" || !rels[0].Prerelease || rels[1].Tag != "v0.2.10" || rels[2].Tag != "v0.2.0" {
 		t.Errorf("releases: %d %s", code, body)
+	}
+	if code, body := get("/api/halotrcer/releases/latest"); code != 200 || !strings.Contains(body, `"tag_name":"v1.2.3-snapshot-abc1234"`) {
+		t.Errorf("--latest: %d %s", code, body)
 	}
 	if code, body := get("/repo/apt/dists/stable/InRelease"); code != 200 || !strings.HasPrefix(body, "body of repo/") {
 		t.Errorf("repo: %d %q", code, body)

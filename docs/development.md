@@ -12,7 +12,7 @@ Some checks need more than Go, so `make gates` doesn't run them:
 
 ## Where the Linux jobs run: `LINUX_RUNNER`
 
-The `ci` job (ci.yml) reads a repository variable, `LINUX_RUNNER` (Settings → Secrets and variables → Actions → Variables):
+The `ci` job (ci.yml) and smoke.yml's `snapshot` and `not-requested` jobs read a repository variable, `LINUX_RUNNER` (Settings → Secrets and variables → Actions → Variables):
 
 ```yaml
 runs-on: ${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}
@@ -56,18 +56,37 @@ Also needed:
 
 A self-hosted runner keeps state between jobs, such as the Go module cache in its home directory. Nothing in CI depends on it.
 
-M4 adds jobs that can use `LINUX_RUNNER` (the smoke `snapshot` job and `integration.yml`). Each gets its own list here.
+`snapshot` (smoke.yml; it builds the snapshot, runs the package-repository image, and needs no PDF tools or shells beyond these):
 
-## smoke.yml inputs (M4)
+```
+git curl tar gzip sha256sum awk sed grep openssl gpg docker docker-daemon
+```
 
-`smoke.yml` doesn't exist yet. When M4 adds it, it will have two `workflow_dispatch` inputs:
+`not-requested` (smoke.yml; it records the macOS and Windows channels as skipped):
+
+```
+grep sed head
+```
+
+## The smoke matrix (smoke.yml)
+
+`smoke.yml` runs only when dispatched. It has two inputs:
 
 | Input | Type | Default |
 |---|---|---|
 | `include_macos` | boolean | `false` |
 | `include_windows` | boolean | `false` |
 
-The macOS and Windows jobs run only when their input is true. Otherwise each records `SKIP: not requested (owner approves macOS/Windows runs per release candidate)`, and the final step counts that as a SKIP, not a failure.
+The macOS and Windows jobs run only when their input is true. Otherwise the `not-requested` job records each of their channels as `SKIP not requested (owner approves macOS/Windows runs per release candidate)`. That's a SKIP with its reason, which `check-results.sh` accepts, so the run still names every channel.
+
+Until both tools' releases are pinned in `packaging/bundled-tools.env`, the snapshot carries Halotrcer's stand-ins for Tokvera and Sievant (`testdata/standin`, PLAN.md K1), and every RESULT line ends with `(stand-in tools)`.
+
+To run one channel locally (it needs Docker; ask first on a shared machine):
+
+```sh
+sh scripts/smoke/snapshot.sh smoke-dist
+SMOKE_RESULTS=/tmp/results sh scripts/smoke/run.sh script sh scripts/smoke/linux.sh "<image>" script smoke-dist
+```
 
 ## Fixtures
 

@@ -1,0 +1,318 @@
+name: smoke
+
+# The smoke matrix (PLAN.md M4): every install channel, end to end, on every
+# OS family the release targets, in Tokvera's and Sievant's structure.
+#
+# One job builds a snapshot (scripts/smoke/snapshot.sh: halotrcer's
+# GoReleaser snapshot, the tools, the signed apt and yum repositories,
+# nothing cosign-signed, nothing published). Every other job installs all
+# three through one channel from a loopback mirror of it (testdata/mirror),
+# checks the versions, runs one halotrcer check and its report, and fails if
+# install to report takes over five minutes (scripts/smoke/smoke.sh and
+# smoke.ps1, which run the same way locally). Until both tools' releases are
+# pinned in packaging/bundled-tools.env, the tools are Halotrcer's stand-ins
+# (K1) and every RESULT line says so.
+#
+# Every channel step runs whatever happened before it (if: !cancelled()) and
+# records PASS, SKIP with a reason, or FAIL (run.sh, run.ps1); the last step
+# of each job alone decides it (check-results.sh).
+#
+# Run only when asked. macOS and Windows minutes cost more: those jobs run
+# only when include_macos / include_windows is true (the owner approves them
+# per release candidate); otherwise a Linux job records each of their
+# channels as SKIP with that reason (docs/development.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_macos:
+        description: Run the macOS jobs (approved per release candidate)
+        type: boolean
+        default: false
+      include_windows:
+        description: Run the Windows jobs (approved per release candidate)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOTOOLCHAIN: local
+
+jobs:
+  snapshot:
+    # The snapshot is every other job's input and must not move when
+    # ubuntu-latest does. LINUX_RUNNER: see ci.yml and docs/development.md.
+    runs-on: ${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # GoReleaser derives the snapshot version from the tags
+      - name: Runner tools (self-hosted only)
+        if: runner.environment == 'self-hosted'
+        run: sh scripts/ci/runner-tools.sh git curl tar gzip sha256sum awk sed grep openssl gpg docker docker-daemon
+      - name: Go version from go.mod's toolchain line
+        id: go
+        run: |
+          v=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2 }' go.mod)
+          test -n "$v" || { echo "go.mod has no toolchain line"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache: false
+      # The release workflow's GoReleaser pin, verified against its checksum.
+      - name: Install goreleaser
+        env:
+          GORELEASER_VERSION: 2.18.3
+          GORELEASER_SHA256: b8dee4728bca1aba0d71a832a17cd0a3799f75372878e7ffa36aef2343bce0bc
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/goreleaser"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f=goreleaser_Linux_x86_64.tar.gz
+          curl -fsSLo "$f" "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/$f"
+          echo "${GORELEASER_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" goreleaser
+          echo "$dir" >> "$GITHUB_PATH"
+      - name: Build the snapshot
+        run: sh scripts/smoke/snapshot.sh smoke-dist
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-dist
+          path: smoke-dist
+          retention-days: 3
+          if-no-files-found: error
+
+  # Linux distros, each in its pinned image (Tokvera's and Sievant's pins),
+  # on x64 and arm64.
+  linux:
+    needs: snapshot
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+        distro:
+          - { name: ubuntu-24.04, image: "ubuntu@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac", channels: "script script-latest deb apt-repo" }
+          - { name: debian-13, image: "debian@sha256:913f6706df59a68922d1dd08f78c2476560a8d367897200a6005b00e5f67c2d5", channels: "script deb apt-repo" }
+          - { name: fedora-43, image: "fedora@sha256:a651ddf48ea28a06ed4e1e6519f51c9f47e7a5a138722ade87369b8fbb7e5b42", channels: "script rpm yum-repo" }
+          - { name: amazonlinux-2023, image: "amazonlinux@sha256:8ed3c0a996841537f75607e7d1de2114d8150391f75792e8da9268738547e73f", channels: "rpm yum-repo" }
+          - { name: alpine-3.22, image: "alpine@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8", channels: "script apk" }
+    name: linux (${{ matrix.distro.name }}, ${{ matrix.runner }})
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: ${{ !cancelled() }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: smoke-dist
+          path: smoke-dist
+      - name: Install and check
+        if: ${{ !cancelled() }}
+        env:
+          IMAGE: ${{ matrix.distro.image }}
+          CHANNELS: ${{ matrix.distro.channels }}
+          SMOKE_RESULTS: ${{ runner.temp }}/smoke-results
+        run: |
+          set -euo pipefail
+          chmod +x smoke-dist/mirror-*   # artifacts do not keep file modes
+          for c in $CHANNELS; do
+            sh scripts/smoke/run.sh "$c" sh scripts/smoke/linux.sh "$IMAGE" "$c" smoke-dist
+          done
+      - name: Every channel reported
+        if: ${{ !cancelled() }}
+        env:
+          CHANNELS: ${{ matrix.distro.channels }}
+          SMOKE_RESULTS: ${{ runner.temp }}/smoke-results
+        run: |
+          # shellcheck disable=SC2086 # one argument per channel
+          sh scripts/smoke/check-results.sh "$SMOKE_RESULTS" $CHANNELS
+
+  # On the host: go install from the checkout, and the release image
+  # (distroless, non-root) checking from inside the container.
+  linux-host:
+    needs: snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Go version from go.mod's toolchain line
+        id: go
+        run: |
+          v=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2 }' go.mod)
+          test -n "$v" || { echo "go.mod has no toolchain line"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache: false
+      - if: ${{ !cancelled() }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: smoke-dist
+          path: smoke-dist
+      - name: go install and the image
+        if: ${{ !cancelled() }}
+        env:
+          SMOKE_RESULTS: ${{ runner.temp }}/smoke-results
+        run: |
+          set -euo pipefail
+          chmod +x smoke-dist/mirror-*
+          for c in goinstall image; do
+            SMOKE_DIST=smoke-dist sh scripts/smoke/run.sh "$c" sh scripts/smoke/smoke.sh "$c"
+          done
+      - name: Every channel reported
+        if: ${{ !cancelled() }}
+        env:
+          SMOKE_RESULTS: ${{ runner.temp }}/smoke-results
+        run: sh scripts/smoke/check-results.sh "$SMOKE_RESULTS" goinstall image
+
+  # macOS on Apple Silicon and Intel: install.sh, its latest path, the casks
+  # from a local tap (with the dependencies), and Rosetta 2 detection.
+  macos:
+    needs: snapshot
+    if: ${{ inputs.include_macos }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: macos-latest, channels: "script script-latest brew rosetta" }
+          - { runner: macos-15-intel, channels: "script script-latest brew" }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: ${{ !cancelled() }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: smoke-dist
+          path: smoke-dist
+      - name: Install and check
+        if: ${{ !cancelled() }}
+        env:
+          CHANNELS: ${{ matrix.channels }}
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_FROM_API: "1"
+          HOMEBREW_NO_ANALYTICS: "1"
+          SMOKE_RESULTS: ${{ runner.temp }}/smoke-results
+        run: |
+          set -euo pipefail
+          chmod +x smoke-dist/mirror-*
+          for c in $CHANNELS; do
+            SMOKE_DIST=smoke-dist sh scripts/smoke/run.sh "$c" sh scripts/smoke/smoke.sh "$c"
+          done
+      - name: Every channel reported
+        if: ${{ !cancelled() }}
+        env:
+          CHANNELS: ${{ matrix.channels }}
+          SMOKE_RESULTS: ${{ runner.temp }}/smoke-results
+        run: |
+          # shellcheck disable=SC2086 # one argument per channel
+          sh scripts/smoke/check-results.sh "$SMOKE_RESULTS" $CHANNELS
+
+  # Windows on x64 and arm64: install.ps1 under Windows PowerShell 5.1 and
+  # PowerShell 7, as a script and through iex, then Scoop and winget. Each
+  # step runs in a fresh child of its PowerShell (run.ps1), records its
+  # result and exits 0; the last step decides the job.
+  windows:
+    needs: snapshot
+    if: ${{ inputs.include_windows }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    env:
+      SMOKE_RESULTS: ${{ github.workspace }}/smoke-results.txt
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-latest, windows-11-arm]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: ${{ !cancelled() }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: smoke-dist
+          path: smoke-dist
+      - name: Native-call helper (Windows PowerShell 5.1)
+        if: ${{ !cancelled() }}
+        shell: powershell
+        run: |
+          if ($PSVersionTable.PSVersion.Major -ne 5) { throw "expected Windows PowerShell 5.1, got $($PSVersionTable.PSVersion)" }
+          ./scripts/smoke/run.ps1 -Key native-ps5 -Script scripts/smoke/native-check.ps1
+      - name: Native-call helper (PowerShell 7)
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./scripts/smoke/run.ps1 -Key native-ps7 -Script scripts/smoke/native-check.ps1
+      - name: install.ps1 as a script (Windows PowerShell 5.1)
+        if: ${{ !cancelled() }}
+        shell: powershell
+        run: ./scripts/smoke/run.ps1 -Key script-ps5 -Script scripts/smoke/smoke.ps1 -Arguments @('-Channel', 'script', '-Dist', 'smoke-dist')
+      - name: install.ps1 as a script (PowerShell 7)
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./scripts/smoke/run.ps1 -Key script-ps7 -Script scripts/smoke/smoke.ps1 -Arguments @('-Channel', 'script', '-Dist', 'smoke-dist')
+      - name: install.ps1 through iex (Windows PowerShell 5.1)
+        if: ${{ !cancelled() }}
+        shell: powershell
+        run: ./scripts/smoke/run.ps1 -Key iex-ps5 -Script scripts/smoke/smoke.ps1 -Arguments @('-Channel', 'iex', '-Dist', 'smoke-dist')
+      - name: install.ps1 through iex (PowerShell 7)
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./scripts/smoke/run.ps1 -Key iex-ps7 -Script scripts/smoke/smoke.ps1 -Arguments @('-Channel', 'iex', '-Dist', 'smoke-dist')
+      - name: Scoop
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./scripts/smoke/run.ps1 -Key scoop-ps7 -Script scripts/smoke/smoke.ps1 -Arguments @('-Channel', 'scoop', '-Dist', 'smoke-dist')
+      - name: winget validate (when winget is present)
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./scripts/smoke/run.ps1 -Key winget-ps7 -Script scripts/smoke/smoke.ps1 -Arguments @('-Channel', 'winget', '-Dist', 'smoke-dist')
+      - name: Every channel reported
+        if: ${{ !cancelled() }}
+        shell: bash
+        # Git Bash reads the Windows path through cygpath.
+        run: sh scripts/smoke/check-results.sh "$(cygpath -u "$SMOKE_RESULTS")" native-ps5 native-ps7 script-ps5 script-ps7 iex-ps5 iex-ps7 scoop-ps7 winget-ps7
+
+  # The macOS and Windows channels when they were not requested: each is
+  # recorded as a SKIP with the reason, so the run's summary names every
+  # channel and says why some did not run.
+  not-requested:
+    if: ${{ !inputs.include_macos || !inputs.include_windows }}
+    runs-on: ${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Runner tools (self-hosted only)
+        if: runner.environment == 'self-hosted'
+        run: sh scripts/ci/runner-tools.sh grep sed head
+      - name: Record the skipped channels
+        env:
+          INCLUDE_MACOS: ${{ inputs.include_macos }}
+          INCLUDE_WINDOWS: ${{ inputs.include_windows }}
+          SMOKE_RESULTS: ${{ runner.temp }}/smoke-results
+        run: |
+          set -eu
+          reason="not requested (owner approves macOS/Windows runs per release candidate)"
+          channels=""
+          if [ "$INCLUDE_MACOS" != true ]; then channels="$channels macos-script macos-script-latest macos-brew macos-rosetta"; fi
+          if [ "$INCLUDE_WINDOWS" != true ]; then channels="$channels native-ps5 native-ps7 script-ps5 script-ps7 iex-ps5 iex-ps7 scoop-ps7 winget-ps7"; fi
+          : >"$SMOKE_RESULTS"
+          for c in $channels; do echo "RESULT $c SKIP $reason" >>"$SMOKE_RESULTS"; done
+          # shellcheck disable=SC2086 # one argument per channel
+          sh scripts/smoke/check-results.sh "$SMOKE_RESULTS" $channels

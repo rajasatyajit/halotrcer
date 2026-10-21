@@ -53,7 +53,7 @@ These change the design. The brief's wording is kept in the requirements below w
   - Image `ghcr.io/rajasatyajit/halotrcer`; chart `oci://ghcr.io/rajasatyajit/charts/halotrcer`.
   - apk key `satyajit.rajaraman@halotrcer.com-halotrcer.rsa.pub`.
 - **D11:** the NOTICE copyright line is "Satyajit Rajaraman / Halotrcer".
-- **C12:** `toolchain go1.27.2`, golangci-lint v2.14.0, govulncheck v1.9.0, actionlint v1.7.12 and gitleaks v8.30.1. Each was checked against its upstream release page on 2026-10-20.
+- **C12:** `toolchain go1.27.2`, golangci-lint v2.14.0, govulncheck v1.9.0, actionlint v1.7.12 and gitleaks v8.30.1. Each was checked against its upstream release page on 2026-10-20. **2026-10-21:** toolchain go1.27.3 (go.dev/dl), because govulncheck reports GO-2026-6809 (crypto/x509, fixed in go1.27.3) under go1.27.2. Pending the owner's confirmation; Tokvera still pins go1.27.2.
 
 ### Implementation decisions taken in M1 (approved 2026-10-21)
 

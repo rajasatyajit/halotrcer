@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/rajasatyajit/halotrcer/internal/compat"
 )
 
 // Options for one install.
@@ -18,6 +20,7 @@ type Options struct {
 	Version       string // a tag for direct and go installs, or "" for the latest
 	Dir           string // direct installs only
 	RequireCosign bool
+	NoVerify      bool // skip the signature and SHA-256 checks (direct installs)
 	DryRun        bool
 }
 
@@ -75,6 +78,9 @@ func (in *Installer) Install(ctx context.Context, t Tool, o Options) (Outcome, e
 	ch := o.Via
 	if upgrade {
 		owner := in.Sys.Owner(ctx, t, existing)
+		if owner == ChannelContainer {
+			return out, fmt.Errorf("%s at %s is part of the container image: pull a newer image (%s) instead", t.Name, existing, Image)
+		}
 		if o.Via != "" && o.Via != owner {
 			return out, fmt.Errorf("%s is already installed by %s at %s: upgrade it there, or uninstall it first", t.Name, owner, existing)
 		}
@@ -94,6 +100,23 @@ func (in *Installer) Install(ctx context.Context, t Tool, o Options) (Outcome, e
 	}
 }
 
+// latest is the release a direct, go or apk install takes when no --version
+// is given. For Tokvera and Sievant it is the newest stable release inside
+// the compatibility matrix this halotrcer was built with: GitHub's latest when
+// that is in range, otherwise the newest stable release in range, so a tool
+// release this halotrcer does not support is never chosen for the user. For
+// halotrcer itself it is GitHub's latest.
+func (in *Installer) latest(ctx context.Context, t Tool) (string, error) {
+	tag, err := in.DL.Latest(ctx, t)
+	m := compat.Load()
+	rng, bundled := m.Tools[t.Name]
+	if !bundled || (err == nil && m.Check(t.Name, tag) == nil) {
+		return tag, err
+	}
+	return in.DL.LatestIn(ctx, t, func(tag string) bool { return m.Check(t.Name, tag) == nil },
+		fmt.Sprintf(">=%s <%s", rng.Min, rng.Below))
+}
+
 func validChannel(ch string) bool {
 	for _, c := range Channels {
 		if c == ch {
@@ -106,7 +129,7 @@ func validChannel(ch string) bool {
 func (in *Installer) manual(ctx context.Context, t Tool, ch, tag string, upgrade bool, out Outcome) (Outcome, error) {
 	if ch == ChannelApk && tag == "" {
 		var err error
-		if tag, err = in.DL.Latest(ctx, t); err != nil {
+		if tag, err = in.latest(ctx, t); err != nil {
 			return out, err
 		}
 	}
@@ -142,6 +165,14 @@ func (in *Installer) packageManager(ctx context.Context, t Tool, ch, tag string,
 	bin := ch
 	if !in.Sys.has(bin) {
 		return out, fmt.Errorf("%s is not installed (choose another --via, or leave --via out)", bin)
+	}
+	// go install @latest would follow the module's newest tag, in the
+	// matrix or not; the tag is resolved the same way as a download's.
+	if ch == ChannelGo && tag == "" && in.DL != nil {
+		var err error
+		if tag, err = in.latest(ctx, t); err != nil {
+			return out, err
+		}
 	}
 	var argvs [][]string
 	if ch == ChannelScoop && !upgrade {
@@ -189,7 +220,7 @@ func (in *Installer) direct(ctx context.Context, t Tool, o Options, tag, existin
 	}
 	var err error
 	if tag == "" {
-		if tag, err = in.DL.Latest(ctx, t); err != nil {
+		if tag, err = in.latest(ctx, t); err != nil {
 			return out, err
 		}
 	}
@@ -211,12 +242,16 @@ func (in *Installer) direct(ctx context.Context, t Tool, o Options, tag, existin
 	}
 	defer func() { _ = os.RemoveAll(work) }()
 	in.say("%s: downloading %s", t.Name, ArchiveName(t, tag, p))
-	v, err := in.DL.Fetch(ctx, t, tag, p, in.Cosign, o.RequireCosign, work)
+	v, err := in.DL.Fetch(ctx, t, tag, p, in.Cosign, o.RequireCosign, o.NoVerify, work)
 	if err != nil {
 		return out, err
 	}
 	out.Signature = v.Signature
-	in.say("%s: signature %s; SHA-256 matches checksums.txt", t.Name, v.Signature)
+	if o.NoVerify {
+		in.say("%s: WARNING: --no-verify: the signature and SHA-256 were NOT checked", t.Name)
+	} else {
+		in.say("%s: signature %s; SHA-256 matches checksums.txt", t.Name, v.Signature)
+	}
 	// Check the new binary runs before it replaces anything.
 	staged, err := Place(work, in.Sys.ExeName(t), v.Binary)
 	if err != nil {

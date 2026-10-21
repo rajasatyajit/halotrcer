@@ -169,6 +169,14 @@ Built (branch `m2-channels`):
 - OS, arch, Rosetta and musl detection; signature then checksum (C7); idempotent; atomic install.
 - At the end it prints `halotrcer check --target <url>`.
 - `halotrcer doctor` recognizes the container image, as Tokvera's doctor does, and gives no install or update advice inside it (owner, 2026-10-21; found in the M2 image check).
+- **Decisions made in M3 (2026-10-21):**
+  - **J1, delegation.** The scripts install halotrcer exactly as the tools' scripts install themselves, then run `halotrcer install <tool> --via direct --dir DIR` for Tokvera and Sievant. Only the halotrcer binary knows its compatibility matrix, so only it can choose tool versions that match the halotrcer version installed. That keeps one tested verification path (Go) for the tools, and records them in the state file for `uninstall --all`. `--only` uses a scratch halotrcer, which is removed afterwards. A tool already on PATH elsewhere is left alone.
+  - **J2, versions.** Without `--version`, a tool's version is its latest stable release when the matrix supports it, else the newest stable release in range (GitHub's release list, first 100). This is what "the tool versions come from the release's matrix" means. halotrcer itself takes GitHub's latest.
+  - **J3, no sudo for `--global` (D5).** The tools' scripts use sudo there; Halotrcer's stops and prints how to run the script as root. `install.ps1 -Global` needs an elevated PowerShell, as the tools' scripts do.
+  - **J4, Windows directories.** Each program goes where its own installer puts it (`%LOCALAPPDATA%\Programs\<name>`, or `%ProgramFiles%\<name>` with `-Global`), unless `-Dir` puts all three in one directory.
+  - **J5, `--no-verify`.** `halotrcer install --no-verify` exists, for the scripts' `--no-verify` to reach the tools.
+  - **J6, the container rule.** "Part of the image" needs Tokvera's markers *and* a `/usr/bin` binary no package manager owns, so a tool installed into `~/.local/bin` inside a development container stays `direct`.
+- `docs/install.md` is drafted in M3, because it describes these scripts; M5 completes the other docs. The apk part of C13 is there: install the three apks in one `apk add`.
 - PowerShell:
   - every native call goes through `Invoke-HalotrcerNative` (Process-based, safe on 5.1 when stderr is written);
   - every script-scope variable is `$script:Halotrcer*`;

@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -229,7 +230,7 @@ func TestWindowsZip(t *testing.T) {
 	sys.OS, sys.Arch = "windows", "arm64"
 	rel := newRelease(t, Tokvera, "v0.2.1", Platform{"windows", "arm64"})
 	d := rel.downloader(t)
-	v, err := d.Fetch(context.Background(), Tokvera, "v0.2.1", Platform{"windows", "arm64"}, nil, false, t.TempDir())
+	v, err := d.Fetch(context.Background(), Tokvera, "v0.2.1", Platform{"windows", "arm64"}, nil, false, false, t.TempDir())
 	if err != nil || !bytes.Contains(v.Binary, []byte("tokvera v0.2.1")) {
 		t.Fatalf("%v", err)
 	}
@@ -377,6 +378,48 @@ func TestOwner(t *testing.T) {
 			t.Errorf("Owner(%s) = %s, want %s", p, got, want)
 		}
 	}
+
+	// Inside a container (either of Tokvera's markers), a /usr/bin binary no
+	// package manager owns is the image's; anything else keeps its channel.
+	for name, marked := range map[string]System{
+		"dockerenv": func() System { c := s; c.Exists = func(p string) bool { return p == "/.dockerenv" }; return c }(),
+		"kubernetes": func() System {
+			c := s
+			c.Getenv = func(k string) string { return map[string]string{"KUBERNETES_SERVICE_HOST": "10.0.0.1"}[k] }
+			return c
+		}(),
+	} {
+		for p, want := range map[string]string{
+			"/usr/bin/sievant":           ChannelContainer,
+			"/usr/bin/tokvera":           ChannelApt, // dpkg owns it
+			"/home/u/.local/bin/tokvera": ChannelDirect,
+			"/usr/local/bin/tokvera":     ChannelDirect,
+		} {
+			if got := marked.Owner(ctx, Tokvera, p); got != want {
+				t.Errorf("%s: Owner(%s) = %s, want %s", name, p, got, want)
+			}
+		}
+	}
+	if got := s.Owner(ctx, Sievant, "/usr/bin/sievant"); got != ChannelDirect {
+		t.Errorf("no container marker: Owner(/usr/bin/sievant) = %s, want direct", got)
+	}
+}
+
+// TestContainerIsNotUpgraded: a tool that is part of the container image is
+// never installed over; the error says to pull a newer image.
+func TestContainerIsNotUpgraded(t *testing.T) {
+	sys := testSystem(t.TempDir())
+	sys.OS = "linux"
+	sys.Exists = func(p string) bool { return p == "/.dockerenv" }
+	in, _, ran := newInstaller(t, sys, nil)
+	in.Find = func(string) (string, error) { return "/usr/bin/tokvera", nil }
+	_, err := in.Install(context.Background(), Tokvera, Options{})
+	if err == nil || !strings.Contains(err.Error(), "part of the container image: pull a newer image ("+Image+")") {
+		t.Errorf("err = %v", err)
+	}
+	if len(*ran) != 0 {
+		t.Errorf("ran %v", *ran)
+	}
 }
 
 func TestUninstallOnlyWhatHalotrcerInstalled(t *testing.T) {
@@ -471,5 +514,71 @@ func TestNoRelease(t *testing.T) {
 	_, err := rel.downloader(t).Latest(context.Background(), Tokvera)
 	if err == nil || !strings.Contains(err.Error(), "no published release yet") {
 		t.Errorf("%v", err)
+	}
+}
+
+// TestLatestStaysInMatrix: without --version, a tool gets the newest stable
+// release inside the compatibility matrix, never one this halotrcer does not
+// support; halotrcer itself gets GitHub's latest.
+func TestLatestStaysInMatrix(t *testing.T) {
+	ctx := context.Background()
+	rel := newRelease(t, Tokvera, "v0.3.1", Platform{"linux", "amd64"})
+	rel.files["/api/tokvera/releases"] = []byte(`[
+		{"tag_name":"v0.3.1"},
+		{"tag_name":"v0.2.11-rc.1","prerelease":true},
+		{"tag_name":"v0.2.12","draft":true},
+		{"tag_name":"v0.2.3"},
+		{"tag_name":"v0.2.10"},
+		{"tag_name":"not-a-tag"},
+		{"tag_name":"v0.1.9"}]`)
+	in, _, _ := newInstaller(t, testSystem(t.TempDir()), rel.downloader(t))
+	if got, err := in.latest(ctx, Tokvera); err != nil || got != "v0.2.10" {
+		t.Errorf("out-of-range latest: got %q, %v; want v0.2.10", got, err)
+	}
+
+	rel.files["/api/tokvera/releases/latest"] = []byte(`{"tag_name":"v0.2.3"}`)
+	rel.requests = nil
+	if got, err := in.latest(ctx, Tokvera); err != nil || got != "v0.2.3" {
+		t.Errorf("in-range latest: got %q, %v", got, err)
+	}
+	if slices.Contains(rel.requests, "/api/tokvera/releases") {
+		t.Error("listed the releases although the latest is in range")
+	}
+
+	rel.files["/api/tokvera/releases/latest"] = []byte(`{"tag_name":"v0.3.1"}`)
+	rel.files["/api/tokvera/releases"] = []byte(`[{"tag_name":"v0.3.1"},{"tag_name":"v0.2.0-rc.2","prerelease":true}]`)
+	if _, err := in.latest(ctx, Tokvera); err == nil || !strings.Contains(err.Error(), "no stable release in the versions this halotrcer supports (>=0.2.0 <0.3.0); give --version") {
+		t.Errorf("nothing in range: %v", err)
+	}
+
+	hal := newRelease(t, Halotrcer, "v9.0.0", Platform{"linux", "amd64"})
+	in2, _, _ := newInstaller(t, testSystem(t.TempDir()), hal.downloader(t))
+	if got, err := in2.latest(ctx, Halotrcer); err != nil || got != "v9.0.0" {
+		t.Errorf("halotrcer: got %q, %v", got, err)
+	}
+}
+
+// TestNoVerify: --no-verify downloads only the archive (no checksums.txt,
+// no signature) and says so; without it, a missing checksums.txt stops the
+// install.
+func TestNoVerify(t *testing.T) {
+	p := Platform{"linux", "amd64"}
+	rel := newRelease(t, Tokvera, "v0.2.0", p)
+	delete(rel.files, "/tokvera/releases/download/v0.2.0/checksums.txt")
+	d := rel.downloader(t)
+	cosignRan := false
+	cosign := func(context.Context, []string) error { cosignRan = true; return nil }
+	if _, err := d.Fetch(context.Background(), Tokvera, "v0.2.0", p, cosign, false, false, t.TempDir()); err == nil {
+		t.Error("installed without checksums.txt")
+	}
+	rel.requests = nil
+	v, err := d.Fetch(context.Background(), Tokvera, "v0.2.0", p, cosign, false, true, t.TempDir())
+	if err != nil || !bytes.Contains(v.Binary, []byte("tokvera v0.2.0")) || !strings.Contains(v.Signature, "NOT checked (--no-verify)") || cosignRan {
+		t.Errorf("no-verify: %+v %v cosign ran %v", v, err, cosignRan)
+	}
+	for _, r := range rel.requests {
+		if strings.Contains(r, "checksums.txt") {
+			t.Errorf("--no-verify fetched %s", r)
+		}
 	}
 }

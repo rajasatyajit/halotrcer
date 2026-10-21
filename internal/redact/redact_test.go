@@ -68,7 +68,7 @@ func TestFromEnvironment(t *testing.T) {
 	t.Setenv("HOME", "/home/canaryperson")
 	t.Setenv("USERPROFILE", `C:\Users\canaryperson`)
 	t.Setenv("USER", "canaryperson")
-	t.Setenv("MY_API_TOKEN", "tok-canary-abcdefgh12345678")
+	t.Setenv("MY_API_TOKEN", "tok-canary-abcdefgh12345678") // gitleaks:allow (synthetic canary)
 	t.Setenv("PLAIN_VALUE", "not-secret-but-named-later")
 	t.Setenv("PLAIN_SETTING", "visible-value-123")
 	t.Setenv("PWD", "/work/dir/visible")

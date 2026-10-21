@@ -79,6 +79,24 @@ func (v Version) String() string {
 	return s
 }
 
+// Less orders versions by major.minor.patch, then a release after its own
+// prereleases (prerelease identifiers compared as strings, which is enough
+// for -rc.N with N < 10; callers choosing releases skip prereleases).
+func Less(a, b Version) bool {
+	if c := coreCmp(a, b); c != 0 {
+		return c < 0
+	}
+	switch {
+	case a.Pre == b.Pre:
+		return false
+	case a.Pre == "":
+		return false
+	case b.Pre == "":
+		return true
+	}
+	return a.Pre < b.Pre
+}
+
 // coreCmp compares major.minor.patch only.
 func coreCmp(a, b Version) int {
 	for _, d := range [][2]int{{a.Major, b.Major}, {a.Minor, b.Minor}, {a.Patch, b.Patch}} {

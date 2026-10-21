@@ -33,6 +33,7 @@ flags:
   --version V        a release tag (direct and go installs)
   --dir DIR          where a direct install goes (default ~/.local/bin)
   --require-cosign   refuse to install without verifying the signature
+  --no-verify        skip the signature and SHA-256 checks (not recommended)
   --dry-run          show what would happen; change nothing
 `
 
@@ -44,6 +45,7 @@ func runInstall(args []string, stdout, stderr io.Writer) int {
 	fs.StringVar(&o.Version, "version", "", "")
 	fs.StringVar(&o.Dir, "dir", "", "")
 	fs.BoolVar(&o.RequireCosign, "require-cosign", false, "")
+	fs.BoolVar(&o.NoVerify, "no-verify", false, "")
 	fs.BoolVar(&o.DryRun, "dry-run", false, "")
 	which, rest := "all", args
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
@@ -67,6 +69,10 @@ func runInstall(args []string, stdout, stderr io.Writer) int {
 		targets = []install.Tool{install.Sievant}
 	default:
 		_, _ = fmt.Fprintf(stderr, "halotrcer install: unknown tool %q (want tokvera, sievant or all)\n", which)
+		return exitUsage
+	}
+	if o.NoVerify && o.RequireCosign {
+		_, _ = fmt.Fprintln(stderr, "halotrcer install: --no-verify and --require-cosign are mutually exclusive")
 		return exitUsage
 	}
 	if o.Version != "" && len(targets) > 1 {
@@ -236,6 +242,9 @@ func runUninstall(args []string, stdout, stderr io.Writer) int {
 func removeSelf(ctx context.Context, in *install.Installer, self string, dryRun bool) error {
 	owner := in.Sys.Owner(ctx, install.Halotrcer, self)
 	switch owner {
+	case install.ChannelContainer:
+		_, _ = fmt.Fprintf(in.Out, "halotrcer is part of the container image (%s); remove the container or the image instead\n", install.Image)
+		return nil
 	case install.ChannelApt, install.ChannelDnf, install.ChannelApk:
 		_, _ = fmt.Fprintf(in.Out, "halotrcer was installed by %s; remove it with: %s\n", owner, strings.Join(install.ManualRemove(owner, install.Halotrcer), "; "))
 		return nil

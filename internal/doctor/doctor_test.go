@@ -96,3 +96,40 @@ func TestDoctorMissingTool(t *testing.T) {
 		t.Errorf("fix %q", r.Checks[1].Fix)
 	}
 }
+
+// TestDoctorInContainer: inside the image, a tool outside the matrix is
+// reported as part of the image, and no fix says to install anything: the
+// fix is a newer image (PLAN.md M3, the M2 image check).
+func TestDoctorInContainer(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell fakes")
+	}
+	dir := t.TempDir()
+	tok := script(t, dir, "tokvera", `case "$1" in version) echo "tokvera v0.1.0-dev (commit f2a7906)";; doctor) echo '{}';; esac`+"\n")
+	sys := install.System{OS: "linux", Home: t.TempDir(), Getenv: func(string) string { return "" },
+		LookPath:     func(string) (string, error) { return "", errors.New("no") },
+		Run:          func(context.Context, string, ...string) (int, string) { return 1, "" },
+		Exists:       func(p string) bool { return p == "/.dockerenv" },
+		EvalSymlinks: func(p string) (string, error) { return "/usr/bin/" + filepath.Base(p), nil },
+	}
+	r := Run(context.Background(), Env{Sys: sys, Cwd: t.TempDir(),
+		Find: func(n string) (string, error) {
+			if n == "tokvera" {
+				return tok, nil
+			}
+			return "", errors.New("not installed")
+		}})
+	byName := map[string]Check{}
+	for _, c := range r.Checks {
+		byName[c.Name] = c
+		if strings.Contains(c.Fix, "halotrcer install") {
+			t.Errorf("%s: install advice inside a container: %q", c.Name, c.Fix)
+		}
+	}
+	if c := byName["tokvera"]; c.Status != Warn || !strings.Contains(c.Detail, "(in the container image)") || c.Fix != "pull a newer image: "+install.Image {
+		t.Errorf("tokvera: %+v", c)
+	}
+	if c := byName["sievant"]; c.Status != Fail || !strings.Contains(c.Fix, install.Image) {
+		t.Errorf("sievant: %+v", c)
+	}
+}

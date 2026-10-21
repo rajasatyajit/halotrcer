@@ -91,7 +91,7 @@ func (f *fakes) args(t *testing.T) string {
 func (f *fakes) env(stdout, stderr *bytes.Buffer, interactive bool, answer bool) Env {
 	return Env{
 		Stdout: stdout, Stderr: stderr,
-		Environ:     []string{"PATH=/usr/bin:/bin", "HOME=/home/fixtureuser", "MY_LLM_KEY=sk-canary-abcdefghijk123456"},
+		Environ:     []string{"PATH=/usr/bin:/bin", "HOME=/home/fixtureuser", "MY_LLM_KEY=sk-canary-abcdefghijk123456"}, // gitleaks:allow (synthetic canary)
 		Generator:   "halotrcer test",
 		Now:         func() time.Time { return time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC) },
 		Interactive: interactive,
@@ -257,7 +257,7 @@ func TestValidate(t *testing.T) {
 		"no target":        func(o *Options) { o.Target = "" },
 		"bad scheme":       func(o *Options) { o.Target = "ftp://x" },
 		"demo and target":  func(o *Options) { o.Demo = true },
-		"key value pasted": func(o *Options) { o.APIKeyEnv = "sk-live-0123456789" },
+		"key value pasted": func(o *Options) { o.APIKeyEnv = "sk-live-0123456789" }, // gitleaks:allow (synthetic canary)
 		"skip both":        func(o *Options) { o.SkipTokvera, o.SkipSievant = true, true },
 		"negative volume":  func(o *Options) { o.MonthlyRequests = -1 },
 		"no format":        func(o *Options) { o.Formats = nil },

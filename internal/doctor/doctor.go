@@ -76,7 +76,13 @@ func Run(ctx context.Context, e Env) *Report {
 		t, _ := install.Lookup(name)
 		p, err := e.Find(name)
 		if err != nil {
-			r.add(name, Fail, "not installed", "halotrcer install "+name)
+			// Inside a container, installing into it is not the fix: the
+			// image is (no install advice inside an image, PLAN.md M3).
+			fix := "halotrcer install " + name
+			if e.Sys.InContainer() {
+				fix = "use the halotrcer image, which has all three: " + install.Image
+			}
+			r.add(name, Fail, "not installed", fix)
 			continue
 		}
 		vctx, cancel := context.WithTimeout(ctx, 15*time.Second)
@@ -84,14 +90,18 @@ func Run(ctx context.Context, e Env) *Report {
 		cancel()
 		v, verr := compat.ParseVersionLine(name, string(res.Stdout)+"\n"+string(res.Stderr))
 		owner := e.Sys.Owner(ctx, t, p)
+		how, fix := "installed by "+owner, "halotrcer install "+name
+		if owner == install.ChannelContainer {
+			how, fix = "in the container image", "pull a newer image: "+install.Image
+		}
 		switch {
 		case verr != nil:
-			r.add(name, Fail, "at "+p+": "+verr.Error(), "halotrcer install "+name)
+			r.add(name, Fail, "at "+p+": "+verr.Error(), fix)
 			continue
 		case m.Check(name, v) != nil:
-			r.add(name, Warn, fmt.Sprintf("%s at %s (installed by %s): %v", v, p, owner, m.Check(name, v)), "halotrcer install "+name)
+			r.add(name, Warn, fmt.Sprintf("%s at %s (%s): %v", v, p, how, m.Check(name, v)), fix)
 		default:
-			r.add(name, OK, fmt.Sprintf("%s at %s (installed by %s)", v, p, owner), "")
+			r.add(name, OK, fmt.Sprintf("%s at %s (%s)", v, p, how), "")
 		}
 		dctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		args := []string{"doctor", "--json"}

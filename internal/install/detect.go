@@ -2,6 +2,7 @@ package install
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -17,6 +18,15 @@ type System struct {
 	Run func(ctx context.Context, name string, args ...string) (int, string)
 	// EvalSymlinks resolves a path (filepath.EvalSymlinks by default).
 	EvalSymlinks func(string) (string, error)
+	// Exists reports whether a path exists (the container markers).
+	Exists func(string) bool
+}
+
+// InContainer reports the markers Tokvera's doctor reads (tokvera
+// internal/selfupdate/method.go): /.dockerenv, which Docker creates in every
+// container, or KUBERNETES_SERVICE_HOST, which Kubernetes sets in every pod.
+func (s System) InContainer() bool {
+	return (s.Exists != nil && s.Exists("/.dockerenv")) || (s.Getenv != nil && s.Getenv("KUBERNETES_SERVICE_HOST") != "")
 }
 
 func (s System) has(name string) bool {
@@ -27,7 +37,11 @@ func (s System) has(name string) bool {
 // Owner reports which channel installed the binary at path, the way
 // `tokvera doctor` reports its install kind: brew (a Caskroom path), scoop
 // and winget (their directories), the system package managers (they own
-// the file), go install (GOBIN or GOPATH/bin), else a plain file.
+// the file), the container image, go install (GOBIN or GOPATH/bin), else a
+// plain file. The container image is a binary in /usr/bin, where the image
+// puts all three, owned by no package manager, inside a container; Tokvera
+// counts any binary in a container, which would also catch one a user
+// installed into ~/.local/bin inside a development container.
 func (s System) Owner(ctx context.Context, tool Tool, path string) string {
 	resolved := path
 	if s.EvalSymlinks != nil {
@@ -60,6 +74,9 @@ func (s System) Owner(ctx context.Context, tool Tool, path string) string {
 				}
 			}
 		}
+	}
+	if s.OS == "linux" && norm == "/usr/bin/"+filepath.Base(norm) && s.InContainer() {
+		return ChannelContainer
 	}
 	for _, d := range s.goBinDirs() {
 		if d != "" && filepath.Dir(resolved) == filepath.Clean(d) {
@@ -162,5 +179,6 @@ func ApkArch(goarch string) string {
 
 // Host returns the real machine.
 func Host(getenv func(string) string, home string, lookPath func(string) (string, error), run func(ctx context.Context, name string, args ...string) (int, string)) System {
-	return System{OS: runtime.GOOS, Arch: runtime.GOARCH, Home: home, Getenv: getenv, LookPath: lookPath, Run: run, EvalSymlinks: filepath.EvalSymlinks}
+	return System{OS: runtime.GOOS, Arch: runtime.GOARCH, Home: home, Getenv: getenv, LookPath: lookPath, Run: run, EvalSymlinks: filepath.EvalSymlinks,
+		Exists: func(p string) bool { _, err := os.Stat(p); return err == nil }}
 }

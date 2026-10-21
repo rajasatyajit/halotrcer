@@ -75,6 +75,9 @@ func (in *Installer) Install(ctx context.Context, t Tool, o Options) (Outcome, e
 	ch := o.Via
 	if upgrade {
 		owner := in.Sys.Owner(ctx, t, existing)
+		if owner == ChannelContainer {
+			return out, fmt.Errorf("%s at %s is part of the container image: pull a newer image (%s) instead", t.Name, existing, Image)
+		}
 		if o.Via != "" && o.Via != owner {
 			return out, fmt.Errorf("%s is already installed by %s at %s: upgrade it there, or uninstall it first", t.Name, owner, existing)
 		}

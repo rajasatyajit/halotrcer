@@ -377,6 +377,48 @@ func TestOwner(t *testing.T) {
 			t.Errorf("Owner(%s) = %s, want %s", p, got, want)
 		}
 	}
+
+	// Inside a container (either of Tokvera's markers), a /usr/bin binary no
+	// package manager owns is the image's; anything else keeps its channel.
+	for name, marked := range map[string]System{
+		"dockerenv": func() System { c := s; c.Exists = func(p string) bool { return p == "/.dockerenv" }; return c }(),
+		"kubernetes": func() System {
+			c := s
+			c.Getenv = func(k string) string { return map[string]string{"KUBERNETES_SERVICE_HOST": "10.0.0.1"}[k] }
+			return c
+		}(),
+	} {
+		for p, want := range map[string]string{
+			"/usr/bin/sievant":           ChannelContainer,
+			"/usr/bin/tokvera":           ChannelApt, // dpkg owns it
+			"/home/u/.local/bin/tokvera": ChannelDirect,
+			"/usr/local/bin/tokvera":     ChannelDirect,
+		} {
+			if got := marked.Owner(ctx, Tokvera, p); got != want {
+				t.Errorf("%s: Owner(%s) = %s, want %s", name, p, got, want)
+			}
+		}
+	}
+	if got := s.Owner(ctx, Sievant, "/usr/bin/sievant"); got != ChannelDirect {
+		t.Errorf("no container marker: Owner(/usr/bin/sievant) = %s, want direct", got)
+	}
+}
+
+// TestContainerIsNotUpgraded: a tool that is part of the container image is
+// never installed over; the error says to pull a newer image.
+func TestContainerIsNotUpgraded(t *testing.T) {
+	sys := testSystem(t.TempDir())
+	sys.OS = "linux"
+	sys.Exists = func(p string) bool { return p == "/.dockerenv" }
+	in, _, ran := newInstaller(t, sys, nil)
+	in.Find = func(string) (string, error) { return "/usr/bin/tokvera", nil }
+	_, err := in.Install(context.Background(), Tokvera, Options{})
+	if err == nil || !strings.Contains(err.Error(), "part of the container image: pull a newer image ("+Image+")") {
+		t.Errorf("err = %v", err)
+	}
+	if len(*ran) != 0 {
+		t.Errorf("ran %v", *ran)
+	}
 }
 
 func TestUninstallOnlyWhatHalotrcerInstalled(t *testing.T) {

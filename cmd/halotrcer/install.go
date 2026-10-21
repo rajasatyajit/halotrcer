@@ -236,6 +236,9 @@ func runUninstall(args []string, stdout, stderr io.Writer) int {
 func removeSelf(ctx context.Context, in *install.Installer, self string, dryRun bool) error {
 	owner := in.Sys.Owner(ctx, install.Halotrcer, self)
 	switch owner {
+	case install.ChannelContainer:
+		_, _ = fmt.Fprintf(in.Out, "halotrcer is part of the container image (%s); remove the container or the image instead\n", install.Image)
+		return nil
 	case install.ChannelApt, install.ChannelDnf, install.ChannelApk:
 		_, _ = fmt.Fprintf(in.Out, "halotrcer was installed by %s; remove it with: %s\n", owner, strings.Join(install.ManualRemove(owner, install.Halotrcer), "; "))
 		return nil

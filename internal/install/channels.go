@@ -66,7 +66,14 @@ const (
 	ChannelDnf    = "dnf"
 	ChannelApk    = "apk"
 	ChannelDirect = "direct"
+	// ChannelContainer is not an install channel: the binary is part of the
+	// container image (ghcr.io/rajasatyajit/halotrcer), which is updated by
+	// pulling a newer image. Owner reports it; --via never accepts it.
+	ChannelContainer = "container"
 )
+
+// Image is the bundle's container image, with all three binaries.
+const Image = "ghcr.io/rajasatyajit/halotrcer"
 
 // Channels lists every channel --via accepts.
 var Channels = []string{ChannelBrew, ChannelScoop, ChannelWinget, ChannelGo, ChannelApt, ChannelDnf, ChannelApk, ChannelDirect}

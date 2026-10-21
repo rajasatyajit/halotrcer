@@ -53,7 +53,7 @@ Halotrcer bundles two other releases, so it can only be released after both of t
       - it retries up to 3 times if Tokvera's or Sievant's publishing moves the branch.
 8. **Check the results:**
    - the winget pull request passes validation;
-   - `brew install --cask rajasatyajit/tap/halotrcer` installs all three;
+   - `brew install --cask rajasatyajit/tap/tokvera rajasatyajit/tap/sievant rajasatyajit/tap/halotrcer` installs all three (docs/install.md says why all three are named);
    - the smoke matrix (`smoke.yml`, M4) is green for the tag. For a release candidate, you decide whether to run the macOS and Windows jobs: dispatch `smoke.yml` with `include_macos` and `include_windows` set to true. Both default to false, and then those jobs record `SKIP not requested (owner approves macOS/Windows runs per release candidate)`.
 
 ## What runs where in `release.yml`

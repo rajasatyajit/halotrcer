@@ -10,7 +10,7 @@ Every channel below installs all three by default. Each comes from its own GitHu
 | Platform | Quickest | Package manager |
 | --- | --- | --- |
 | Linux | `curl -fsSL https://www.halotrcer.com/install.sh \| sh` | apt, dnf, apk (below) |
-| macOS | `curl -fsSL https://www.halotrcer.com/install.sh \| sh` | `brew install --cask rajasatyajit/tap/halotrcer` |
+| macOS | `curl -fsSL https://www.halotrcer.com/install.sh \| sh` | `brew install --cask rajasatyajit/tap/tokvera rajasatyajit/tap/sievant rajasatyajit/tap/halotrcer` |
 | Windows | `irm https://www.halotrcer.com/install.ps1 \| iex` | `scoop install rajasatyajit/halotrcer`, `winget install -e --id Halotrcer.Halotrcer` |
 | Any (Go) | `go install github.com/rajasatyajit/halotrcer/cmd/halotrcer@latest`, then `halotrcer install` | |
 | Container | `docker run --rm ghcr.io/rajasatyajit/halotrcer:latest version` | |
@@ -112,10 +112,12 @@ An override must be `https`, or plain `http` to a loopback address only; anythin
 ## Homebrew (macOS)
 
 ```sh
-brew install --cask rajasatyajit/tap/halotrcer
+brew install --cask rajasatyajit/tap/tokvera rajasatyajit/tap/sievant rajasatyajit/tap/halotrcer
 ```
 
-The cask depends on the `rajasatyajit/tap/tokvera` and `rajasatyajit/tap/sievant` casks, so this one command installs all three.
+**Why all three are named.** The halotrcer cask depends on the tokvera and sievant casks, but Homebrew won't load a cask from a tap outside Homebrew's own unless you have trusted it. `brew install` trusts the casks named on its command line and no others. So `brew install --cask rajasatyajit/tap/halotrcer` alone stops with "Refusing to load cask rajasatyajit/tap/sievant from untrusted tap rajasatyajit/tap". Naming all three trusts exactly those three, and later `brew upgrade`s keep working.
+
+If you'd rather trust everything in the tap, run `brew trust --tap rajasatyajit/tap` once; `brew install --cask rajasatyajit/tap/halotrcer` then brings both tools with it. `brew untrust --tap rajasatyajit/tap` takes that back.
 
 **The macOS binaries are not notarized by Apple.** Homebrew checks each archive's SHA-256 against its cask. Each cask then removes macOS's quarantine flag from the one binary it installed, so Gatekeeper does not refuse it as "damaged". Apple has not vouched for the binary; the guarantee is the checksum and the cosign signature. The cask's caveats show how to check Halotrcer's signature yourself:
 

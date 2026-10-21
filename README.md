@@ -29,7 +29,7 @@ Package managers install the two tools as dependencies:
 
 | | |
 |---|---|
-| Homebrew | `brew install --cask rajasatyajit/tap/halotrcer` |
+| Homebrew | `brew install --cask rajasatyajit/tap/tokvera rajasatyajit/tap/sievant rajasatyajit/tap/halotrcer` ([why all three](docs/install.md#homebrew-macos)) |
 | Scoop | `scoop bucket add rajasatyajit https://github.com/rajasatyajit/scoop-bucket`, then `scoop install rajasatyajit/halotrcer` |
 | winget | `winget install -e --id Halotrcer.Halotrcer` |
 | apt, dnf | the signed repositories in [docs/install.md](docs/install.md#the-apt-and-yum-repositories) |

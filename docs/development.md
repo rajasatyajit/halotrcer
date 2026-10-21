@@ -56,10 +56,10 @@ Also needed:
 
 A self-hosted runner keeps state between jobs, such as the Go module cache in its home directory. Nothing in CI depends on it.
 
-`snapshot` (smoke.yml; it builds the snapshot, runs the package-repository image, and needs no PDF tools or shells beyond these):
+`snapshot` (smoke.yml; it builds the snapshot, runs the package-repository image, and needs no PDF tools or shells beyond these; cosign verifies the tools' pinned releases once they exist):
 
 ```
-git curl tar gzip sha256sum awk sed grep openssl gpg docker docker-daemon
+git curl tar gzip sha256sum awk sed grep openssl gpg docker docker-daemon cosign
 ```
 
 `not-requested` (smoke.yml; it records the macOS and Windows channels as skipped):
@@ -88,6 +88,17 @@ git make curl tar gzip sha256sum awk sed grep jq openssl gpg kubectl docker dock
 The macOS and Windows jobs run only when their input is true. Otherwise the `not-requested` job records each of their channels as `SKIP not requested (owner approves macOS/Windows runs per release candidate)`. That's a SKIP with its reason, which `check-results.sh` accepts, so the run still names every channel.
 
 Until both tools' releases are pinned in `packaging/bundled-tools.env`, the snapshot carries Halotrcer's stand-ins for Tokvera and Sievant (`testdata/standin`, PLAN.md K1), and every RESULT line ends with `(stand-in tools)`.
+
+Once both are pinned, `snapshot.sh` switches to its release mode and builds no stand-in. A partial pin file stops it before anything is built. For each tool, `scripts/smoke/fetch-release.sh` does the following, and refuses at the first thing that doesn't hold:
+
+- downloads `checksums.txt` and its Sigstore bundle, and verifies them with `cosign verify-blob` against the exact identity of that tag's release run;
+- downloads the twelve files the channels install, each listed in `checksums.txt` and matching it;
+- takes the cask, Scoop manifest and winget manifests from the shared tap, the shared bucket and winget-pkgs; each must name the pinned version and list only SHA-256s that `checksums.txt` lists;
+- takes the apk public key from the tool's repository at the tag.
+
+The tools' packages keep their real signatures: dnf gets the shared package key (`packages-key.asc`) beside the snapshot's own.
+
+The snapshot itself is never cosign-signed, so `smoke.sh` and `smoke.ps1` hide cosign from PATH. Otherwise the installers would rightly refuse it as a release whose signature is missing.
 
 To run one channel locally (it needs Docker; ask first on a shared machine):
 

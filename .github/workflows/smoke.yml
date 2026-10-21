@@ -5,7 +5,9 @@ name: smoke
 #
 # One job builds a snapshot (scripts/smoke/snapshot.sh: halotrcer's
 # GoReleaser snapshot, the tools, the signed apt and yum repositories,
-# nothing cosign-signed, nothing published). Every other job installs all
+# nothing cosign-signed, nothing published). Once both tools' releases are
+# pinned, it downloads them instead and cosign-verifies each against its
+# release run's identity (scripts/smoke/fetch-release.sh). Every other job installs all
 # three through one channel from a loopback mirror of it (testdata/mirror),
 # checks the versions, runs one halotrcer check and its report, and fails if
 # install to report takes over five minutes (scripts/smoke/smoke.sh and
@@ -57,7 +59,7 @@ jobs:
           fetch-depth: 0 # GoReleaser derives the snapshot version from the tags
       - name: Runner tools (self-hosted only)
         if: runner.environment == 'self-hosted'
-        run: sh scripts/ci/runner-tools.sh git curl tar gzip sha256sum awk sed grep openssl gpg docker docker-daemon
+        run: sh scripts/ci/runner-tools.sh git curl tar gzip sha256sum awk sed grep openssl gpg docker docker-daemon cosign
       - name: Go version from go.mod's toolchain line
         id: go
         run: |
@@ -68,6 +70,8 @@ jobs:
         with:
           go-version: ${{ steps.go.outputs.version }}
           cache: false
+      # The release mode verifies the tools' pinned releases with cosign.
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       # The release workflow's GoReleaser pin, verified against its checksum.
       - name: Install goreleaser
         env:

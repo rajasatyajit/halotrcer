@@ -120,7 +120,7 @@ jobs:
           PWSH_SHA256: 3fc5e1567c450bd7bd5ae69ebb0a9a4a4e0418bbc36b0232cf6dd547f0bfc0eb
         run: |
           set -eu
-          if command -v pwsh >/dev/null; then pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'; exit 0; fi
+          if command -v pwsh >/dev/null; then pwsh --version; exit 0; fi
           dir="$RUNNER_TEMP/pwsh"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
           f="powershell-${PWSH_VERSION}-linux-x64.tar.gz"
           curl -fsSLo "$f" "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/$f"
@@ -138,7 +138,7 @@ jobs:
           qpdf --version | head -1
           dash -c 'echo dash ok'
           busybox | head -1
-          pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+          pwsh --version
           goreleaser --version | grep GitVersion
           helm version --short
 

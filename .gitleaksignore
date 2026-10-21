@@ -4,7 +4,7 @@
 #
 # commands_test.go: "sk-live-SECRET123456" passed to --api-key-env (never echoed)
 4679543ca3da1db2ca41aa039ca11cd0772ae358:cmd/halotrcer/commands_test.go:generic-api-key:50
-cmd/halotrcer/commands_test.go:generic-api-key:50
+cmd/halotrcer/commands_test.go:generic-api-key:55
 # redact_test.go: "tok-canary-..." in MY_API_TOKEN
 b6d9ff8bc7e09060fd47e1b5243c924f5827480d:internal/redact/redact_test.go:generic-api-key:68
 internal/redact/redact_test.go:generic-api-key:71

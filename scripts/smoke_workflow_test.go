@@ -34,6 +34,27 @@ func TestSmokeWorkflow(t *testing.T) {
 			t.Errorf("input %s: %+v (want a boolean defaulting to false)", in, i)
 		}
 	}
+	if i := on.On.Dispatch.Inputs["homebrew_developer"]; i.Type != "boolean" || i.Default != false {
+		t.Errorf("input homebrew_developer: %+v (want a boolean defaulting to false)", i)
+	}
+	// HOMEBREW_DEVELOPER reaches the brew channel only: smoke.sh sets it
+	// from SMOKE_HOMEBREW_DEVELOPER inside its brew case, and only the macOS
+	// job passes that.
+	for name, j := range w.Jobs {
+		for _, s := range j.Steps {
+			_, has := s.Env["SMOKE_HOMEBREW_DEVELOPER"]
+			if has != (name == "macos" && s.Name == "Install and check") {
+				t.Errorf("%s step %q: SMOKE_HOMEBREW_DEVELOPER set %v", name, s.Name, has)
+			}
+			if _, ok := s.Env["HOMEBREW_DEVELOPER"]; ok {
+				t.Errorf("%s step %q sets HOMEBREW_DEVELOPER for every channel", name, s.Name)
+			}
+		}
+	}
+	if sh := string(root(t, "scripts/smoke/smoke.sh")); !strings.Contains(sh[strings.Index(sh, "\nbrew)"):strings.Index(sh, "\ngoinstall)")], "SMOKE_HOMEBREW_DEVELOPER") ||
+		strings.Count(sh, "SMOKE_HOMEBREW_DEVELOPER") != 1 {
+		t.Error("smoke.sh does not set HOMEBREW_DEVELOPER in its brew channel only")
+	}
 	if strings.Contains(raw, "\n  push:") || strings.Contains(raw, "\n  schedule:") || strings.Contains(raw, "\n  pull_request:") {
 		t.Error("smoke.yml runs on something other than workflow_dispatch")
 	}

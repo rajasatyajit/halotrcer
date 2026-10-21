@@ -203,7 +203,7 @@ Built (branch `m2-channels`):
 
   - Linux runs on `[ubuntu-latest, ubuntu-24.04-arm]`. macOS runs on macos-latest (with a Rosetta channel) and macos-15-intel.
   - Windows runs on `[windows-latest, windows-11-arm]` × `native/script/iex` under PowerShell 5.1 and 7, plus `scoop-ps7` and `winget-ps7` (a pinned winget when the runner's is older).
-  - `workflow_dispatch` inputs `include_macos` and `include_windows` (boolean, default false). Those jobs run only when theirs is true. Otherwise they record `SKIP: not requested (owner approves macOS/Windows runs per release candidate)` (owner, 2026-10-21; docs/development.md).
+  - `workflow_dispatch` inputs `include_macos` and `include_windows` (boolean, default false), and `homebrew_developer` (default false: `HOMEBREW_DEVELOPER=1` for the brew channel only). Those jobs run only when theirs is true. Otherwise they record `SKIP: not requested (owner approves macOS/Windows runs per release candidate)` (owner, 2026-10-21; docs/development.md).
   - Every other Linux job (`snapshot`, and `integration.yml`) runs on `${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}`, installs what it needs itself and first runs `scripts/ci/runner-tools.sh` on a self-hosted runner; the smoke matrix's `ubuntu-latest` and the arm64 runners stay as they are.
 - Every step uses `if: !cancelled()` and appends `RESULT <channel> PASS|SKIP <reason>|FAIL <reason>`. `check-results.sh` alone decides the job.
 - Per channel:

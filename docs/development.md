@@ -78,12 +78,15 @@ git make curl tar gzip sha256sum awk sed grep jq openssl gpg kubectl docker dock
 
 ## The smoke matrix (smoke.yml)
 
-`smoke.yml` runs only when dispatched. It has two inputs:
+`smoke.yml` runs only when dispatched. It has three inputs:
 
 | Input | Type | Default |
 |---|---|---|
 | `include_macos` | boolean | `false` |
 | `include_windows` | boolean | `false` |
+| `homebrew_developer` | boolean | `false` |
+
+`homebrew_developer` sets `HOMEBREW_DEVELOPER=1` for the macOS brew channel only, where Homebrew turns a deprecation into an error (docs/releasing.md, "Homebrew cask hooks"). It needs `include_macos`.
 
 The macOS and Windows jobs run only when their input is true. Otherwise the `not-requested` job records each of their channels as `SKIP not requested (owner approves macOS/Windows runs per release candidate)`. That's a SKIP with its reason, which `check-results.sh` accepts, so the run still names every channel.
 

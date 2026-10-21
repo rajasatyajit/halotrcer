@@ -244,6 +244,16 @@ yum-repo)
 	;;
 brew)
 	[ "$os" = darwin ] || fail "brew: macOS only"
+	# smoke.yml's homebrew_developer input: Homebrew raises on a deprecation
+	# instead of warning when HOMEBREW_DEVELOPER is set (7.0.10
+	# Library/Homebrew/utils/output.rb, disable_for_developers).
+	dev=""
+	if [ "${SMOKE_HOMEBREW_DEVELOPER:-}" = 1 ]; then
+		HOMEBREW_DEVELOPER=1
+		export HOMEBREW_DEVELOPER
+		dev=" (HOMEBREW_DEVELOPER=1)"
+		say "HOMEBREW_DEVELOPER=1 for this channel's brew commands"
+	fi
 	# A local tap under the real tap's name, so the cask's dependencies
 	# (rajasatyajit/tap/tokvera, .../sievant) resolve to the casks here.
 	brew tap-new --no-git rajasatyajit/tap >/dev/null
@@ -266,7 +276,7 @@ brew)
 	for p in halotrcer tokvera sievant; do
 		brew list --cask "rajasatyajit/tap/$p" >/dev/null 2>&1 || fail "brew: the $p cask is not installed"
 	done
-	pass "the documented brew command installed the halotrcer, tokvera and sievant casks"
+	pass "the documented brew command installed the halotrcer, tokvera and sievant casks$dev"
 	bin="$(brew --prefix)/bin/halotrcer"
 	for p in halotrcer tokvera sievant; do
 		f="$(readlink -f "$(brew --prefix)/bin/$p" 2>/dev/null || echo "$(brew --prefix)/bin/$p")"

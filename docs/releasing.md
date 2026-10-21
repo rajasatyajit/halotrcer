@@ -15,6 +15,7 @@ Release candidates (`vX.Y.Z-rc.N`) stop short of Homebrew, Scoop, winget and the
 Halotrcer bundles two other releases, so it can only be released after both of them.
 
 - [ ] **Tokvera and Sievant are released.** Each has a published release in the compatibility matrix (`internal/compat/matrix.json`, currently `>=0.2.0 <0.3.0`), with its image and chart pushed.
+- [ ] **Tokvera's embedded price list is fresh.** Its `as_of` is 2026-10-11 (`pkg/scan/rates.yaml` in Tokvera), and Tokvera calls it stale more than 60 days later (`EmbeddedPricingStaleDays`, `pkg/scan/pricinginfo.go`). 2026-12-10 is the last clean day: from 2026-12-11, every scan, and so every Halotrcer report, carries the stale-prices warning. Have Tokvera refresh the sheet right before any Tokvera release that Halotrcer will pin.
 - [ ] **For a stable Halotrcer release:** both tools' winget manifests are merged into `microsoft/winget-pkgs`. winget-pkgs validation refuses a manifest whose dependencies are not in the catalog yet.
 - [ ] **The repository is public** (it is, since 2026-10-21). The preflight refuses a private one: attestations need it, and every channel downloads release assets without credentials. Tokvera's and Sievant's repositories must be public too: `halotrcer install` and every package manager download their releases without credentials.
 - [ ] **Private vulnerability reporting is on** (Settings → Code security → Private vulnerability reporting). SECURITY.md offers it as a reporting channel.

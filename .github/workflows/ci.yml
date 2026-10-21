@@ -61,7 +61,7 @@ jobs:
       # less. docs/development.md has the packages.
       - name: Runner tools (self-hosted only)
         if: runner.environment == 'self-hosted'
-        run: sh scripts/ci/runner-tools.sh git make gcc curl tar gzip sha256sum awk sed grep base64 jq gpg openssl qpdf pdftotext docker docker-daemon
+        run: sh scripts/ci/runner-tools.sh git make gcc curl wget tar gzip sha256sum awk sed grep base64 jq gpg openssl qpdf pdftotext dash busybox docker docker-daemon
 
       - name: Go version from go.mod's toolchain line
         id: go

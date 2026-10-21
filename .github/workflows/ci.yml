@@ -102,11 +102,32 @@ jobs:
           tar xzf "$f" -C "$dir" --strip-components=1 linux-amd64/helm
           echo "$dir" >> "$GITHUB_PATH"
 
-      # GitHub's image lacks them; a self-hosted runner has them already
-      # (checked above), so nothing there needs sudo.
-      - name: Install PDF checkers
+      # The PDF checkers, and the shells and downloader the installer tests
+      # run install.sh under (sh, dash, busybox; curl and wget), installed
+      # here rather than assumed of the image; a self-hosted runner has them
+      # already (checked above), so nothing there needs sudo.
+      - name: Install PDF checkers and the installer tests' shells
         if: runner.environment != 'self-hosted'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq qpdf poppler-utils
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq qpdf poppler-utils dash busybox-static wget
+
+      # pwsh for the install.ps1 tests: the image's when it has one, else
+      # PowerShell's release archive, pinned and checksum-verified (the sha256
+      # in its hashes.sha256 and in GitHub's asset digest).
+      - name: Install pwsh when missing
+        if: runner.environment != 'self-hosted'
+        env:
+          PWSH_VERSION: 7.4.21
+          PWSH_SHA256: 3fc5e1567c450bd7bd5ae69ebb0a9a4a4e0418bbc36b0232cf6dd547f0bfc0eb
+        run: |
+          set -eu
+          if command -v pwsh >/dev/null; then pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'; exit 0; fi
+          dir="$RUNNER_TEMP/pwsh"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f="powershell-${PWSH_VERSION}-linux-x64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/$f"
+          echo "${PWSH_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir"
+          chmod +x "$dir/pwsh"
+          echo "$dir" >> "$GITHUB_PATH"
 
       - name: Tool versions
         run: |
@@ -115,6 +136,9 @@ jobs:
           gitleaks version
           actionlint -version
           qpdf --version | head -1
+          dash -c 'echo dash ok'
+          busybox | head -1
+          pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
           goreleaser --version | grep GitVersion
           helm version --short
 

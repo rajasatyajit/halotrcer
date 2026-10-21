@@ -1,9 +1,9 @@
 Scan plan for http://127.0.0.1:18089/v1
-  model:        tokvera-sim-flaky
+  model:        tokvera-sim-batched
   protocol:     openai_compatible at http://127.0.0.1:18089/v1
   load:         suite quick, levels 1,2,4, up to 8 requests per level, 24 in all
   per request:  one of Tokvera's fixed benchmark prompts, at most 256 completion tokens
   token budget: 6,672 tokens (hard cap)
   worst case:   USD 0.01, estimated (rate sheet fixture-pricing.yaml, as of 2026-10-20, source halotrcer fixture (synthetic rate, not a real price))
   also read:    the model list and identity endpoints (already read), /metrics during the load
-{"time":"2026-10-20T19:57:20.947452519+05:30","level":"INFO","msg":"scan result","grade":"F","requests":24,"succeeded":9,"findings":3,"report":"flaky/report.html","data":"flaky/report.json"}
+{"time":"2026-10-21T12:21:22.680477167+05:30","level":"INFO","msg":"scan result","grade":"A","requests":24,"succeeded":24,"findings":1,"report":"sim/report.html","data":"sim/report.json"}

@@ -126,7 +126,7 @@
     "reliability_concern": "Tokvera graded this endpoint D"
   },
   "cost_performance": {
-    "target": "http://127.0.0.1:38409/v1",
+    "target": "http://127.0.0.1:44047/v1",
     "model": "tokvera-sim-demo",
     "simulated": true,
     "simulated_timing": true,

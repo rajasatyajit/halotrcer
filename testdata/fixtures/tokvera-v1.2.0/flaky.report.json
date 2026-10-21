@@ -1,0 +1,152 @@
+{
+  "schema_version": "tokvera.scan-report/v1.2.0",
+  "scoring_version": "0.9.0",
+  "tool": {
+    "name": "tokvera",
+    "version": "v0.1.0-dev"
+  },
+  "generated_at": "2026-10-20T14:27:20.249839148Z",
+  "simulated": false,
+  "simulated_timing": false,
+  "target": {
+    "url": "http://127.0.0.1:18089/v1",
+    "origin": "http://127.0.0.1:18089",
+    "base_url": "http://127.0.0.1:18089/v1",
+    "kind": "openai_compatible",
+    "provider": "self_hosted",
+    "loopback": true
+  },
+  "model": "tokvera-sim-flaky",
+  "run": {
+    "started_at": "2026-10-20T14:27:20.249839148Z",
+    "duration_ms": 696,
+    "requests": 24,
+    "succeeded": 9,
+    "failed": 15,
+    "budget_stopped": false,
+    "cancelled": false,
+    "tokens_reserved": 4356
+  },
+  "cost": {
+    "provider": "self_hosted",
+    "usd_per_1k_requests": 0.047111111,
+    "requests_priced": 9,
+    "requests_succeeded": 9,
+    "pricing_as_of": "2026-10-20",
+    "pricing_source": "halotrcer fixture (synthetic rate, not a real price)",
+    "estimate": true,
+    "basis": "the mean priced request times 1,000, at the rate sheet's input and output rates; input tokens are estimated from the prompt length where the provider did not state them, and the completion is the provider-reported count"
+  },
+  "pricing": {
+    "sheet": "fixture-pricing.yaml",
+    "embedded": false,
+    "as_of": "2026-10-20",
+    "source": "halotrcer fixture (synthetic rate, not a real price)",
+    "age_days": 0,
+    "stale": false,
+    "estimate": true
+  },
+  "score": {
+    "scoring_version": "0.9.0",
+    "provisional": true,
+    "grade": "F",
+    "points": 56.7,
+    "uncapped_grade": "F",
+    "pillars": [
+      {
+        "pillar": "latency",
+        "weight": 35,
+        "effective_weight": 0.4667,
+        "points": 100,
+        "graded_checks": 2
+      },
+      {
+        "pillar": "reliability",
+        "weight": 30,
+        "effective_weight": 0.4,
+        "points": 0,
+        "graded_checks": 2
+      },
+      {
+        "pillar": "capacity",
+        "weight": 15,
+        "effective_weight": 0,
+        "graded_checks": 0
+      },
+      {
+        "pillar": "observability",
+        "weight": 10,
+        "effective_weight": 0.1333,
+        "points": 75,
+        "graded_checks": 2
+      },
+      {
+        "pillar": "cost_and_cache",
+        "weight": 10,
+        "effective_weight": 0,
+        "graded_checks": 0
+      }
+    ],
+    "caps_applied": [
+      {
+        "id": "error_rate_over_25_percent",
+        "max_grade": "F",
+        "reason": "more than 25% of requests failed"
+      },
+      {
+        "id": "error_rate_over_5_percent",
+        "max_grade": "D",
+        "reason": "more than 5% of requests failed"
+      }
+    ],
+    "not_counted": [
+      {
+        "id": "ttft_p99_load_ratio",
+        "reason": "insufficient_evidence"
+      },
+      {
+        "id": "generation_rate_load_ratio",
+        "reason": "insufficient_evidence"
+      },
+      {
+        "id": "repeat_prompt_share",
+        "reason": "insufficient_evidence"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "rank": 1,
+      "check_id": "error_rate",
+      "status": "fail",
+      "title": "Requests are failing",
+      "evidence": "15 of 24 requests failed (HTTP 429 ×15)",
+      "why_it_matters": "Every failed request is either a user-visible error or a retry that costs latency and money. The status breakdown in the evidence says whether it is rate limiting, timeouts or server errors.",
+      "suggested_fix": "For 429s, raise the rate limit or add client-side retry with exponential backoff and jitter. For timeouts, compare the request timeout with the measured request duration. For 5xx, read the server logs at the times of the scan.",
+      "effort": "0.5–3 days",
+      "impact": 30
+    },
+    {
+      "rank": 2,
+      "check_id": "error_rate_at_peak",
+      "status": "fail",
+      "title": "Failures rise at the highest concurrency",
+      "evidence": "5 of 8 requests failed at concurrency 4",
+      "why_it_matters": "The endpoint refuses or drops requests once enough arrive together, which is exactly when traffic peaks.",
+      "suggested_fix": "Size capacity or rate limits for the concurrency your traffic reaches, and make the client back off on 429 and 503 rather than retrying immediately.",
+      "effort": "1–3 days",
+      "impact": 30
+    },
+    {
+      "rank": 3,
+      "check_id": "metrics_endpoint",
+      "status": "warn",
+      "title": "No Prometheus metrics at /metrics",
+      "evidence": "no Prometheus exposition answered at /metrics on the target's origin",
+      "why_it_matters": "Queue depth, batch size and cache usage are what explain a latency problem. Without them, a slowdown can be seen but not diagnosed.",
+      "suggested_fix": "Enable the server's metrics endpoint (llama.cpp needs `--metrics`; vLLM and TGI serve /metrics by default) and scrape it. If the endpoint sits behind a gateway, expose the metrics there.",
+      "effort": "0.5 days",
+      "impact": 5
+    }
+  ]
+}

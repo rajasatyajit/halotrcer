@@ -4,7 +4,8 @@
     "tokvera": {
       "min": "0.2.0",
       "below": "0.3.0",
-      "schema_prefix": "tokvera.scan-report/v1."
+      "schema_prefix": "tokvera.scan-report/v1.",
+      "schema_tested": "tokvera.scan-report/v1.3.0"
     },
     "sievant": {
       "min": "0.2.0",

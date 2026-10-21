@@ -46,7 +46,7 @@ func abs(t *testing.T, p string) string {
 
 func (f *fakes) write(t *testing.T) {
 	t.Helper()
-	tokReport := abs(t, filepath.Join(fixtures, "tokvera-b97e278", "flaky.report.json"))
+	tokReport := abs(t, filepath.Join(fixtures, "tokvera-f2a7906", "flaky.report.json"))
 	svScan := abs(t, filepath.Join(fixtures, "sievant-d8a8bcf", "scan-smoke.json"))
 	svReport := abs(t, filepath.Join(fixtures, "sievant-d8a8bcf", "report.json"))
 	tok := `#!/bin/sh

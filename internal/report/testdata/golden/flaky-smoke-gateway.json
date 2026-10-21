@@ -152,37 +152,37 @@
     "requests": 24,
     "succeeded": 9,
     "failed": 15,
-    "duration_ms": 696,
+    "duration_ms": 692,
     "levels": [
       {
         "concurrency": 1,
         "requests": 8,
         "failed": 3,
-        "ttft_p50_ms": 20.589435,
-        "ttft_p95_ms": 21.215641,
-        "ttft_p99_ms": 21.215641,
-        "request_duration_p95_ms": 100.1043,
-        "output_tokens_per_s_p50": 205.52552813316925
+        "ttft_p50_ms": 20.558478,
+        "ttft_p95_ms": 20.7601,
+        "ttft_p99_ms": 20.7601,
+        "request_duration_p95_ms": 98.508244,
+        "output_tokens_per_s_p50": 205.89712530294224
       },
       {
         "concurrency": 2,
         "requests": 8,
         "failed": 7,
-        "ttft_p50_ms": 20.908789,
-        "ttft_p95_ms": 20.908789,
-        "ttft_p99_ms": 20.908789,
-        "request_duration_p95_ms": 98.940104,
-        "output_tokens_per_s_p50": 205.34909493734008
+        "ttft_p50_ms": 20.839169,
+        "ttft_p95_ms": 20.839169,
+        "ttft_p99_ms": 20.839169,
+        "request_duration_p95_ms": 98.501812,
+        "output_tokens_per_s_p50": 206.10734714724887
       },
       {
         "concurrency": 4,
         "requests": 8,
         "failed": 5,
-        "ttft_p50_ms": 20.756451,
-        "ttft_p95_ms": 20.843485,
-        "ttft_p99_ms": 20.843485,
-        "request_duration_p95_ms": 98.541359,
-        "output_tokens_per_s_p50": 205.93781797683982
+        "ttft_p50_ms": 20.482103,
+        "ttft_p95_ms": 20.484137,
+        "ttft_p99_ms": 20.484137,
+        "request_duration_p95_ms": 98.282367,
+        "output_tokens_per_s_p50": 205.7616449902775
       }
     ],
     "cost": {

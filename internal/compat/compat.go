@@ -29,9 +29,13 @@ type Matrix struct {
 // major.minor.patch only, so the release candidates of a supported version
 // (0.2.0-rc.1) are in range (D2).
 type Tool struct {
-	Min           string `json:"min"`
-	Below         string `json:"below"`
-	SchemaPrefix  string `json:"schema_prefix,omitempty"`
+	Min          string `json:"min"`
+	Below        string `json:"below"`
+	SchemaPrefix string `json:"schema_prefix,omitempty"`
+	// SchemaTested is the schema this release's tests and fixtures were
+	// built against. Any other minor of the same major is read the same
+	// way, without a warning: fields are only ever added.
+	SchemaTested  string `json:"schema_tested,omitempty"`
 	ReportVersion int    `json:"report_version,omitempty"`
 }
 

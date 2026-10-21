@@ -1,6 +1,7 @@
 Efficiency Score: F (56.7 / 100, provisional scoring 0.9.0)
   capped at F: more than 25% of requests failed
   capped at D: more than 5% of requests failed
+  Provisional scoring. The weights and thresholds are provisional: they have not yet been calibrated against real pilot scans and may change before scoring 1.0.0.
 Requests: 24 sent, 9 succeeded.
   1. [fail] Requests are failing: 15 of 24 requests failed (HTTP 429 ×15)
   2. [fail] Failures rise at the highest concurrency: 5 of 8 requests failed at concurrency 4

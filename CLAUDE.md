@@ -64,7 +64,7 @@ go test ./internal/report -update   # rewrite the report goldens; the diff is th
 - No telemetry. Network access is limited to:
   - the scanned target;
   - release downloads during `install` and `update`;
-  - `doctor --check-update`.
+  - `update --check`.
 - stdout carries the command's result; logs and progress go to stderr.
 - Exit codes are fixed once documented: 0 ok, 1 runtime failure, 2 usage. A new code needs an owner decision.
 - Never run sudo or escalate privileges on the user's behalf. For apt, dnf and apk, print the exact commands and stop (PLAN.md D5).

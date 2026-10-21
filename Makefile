@@ -27,7 +27,7 @@ SHELL_SCRIPTS = $(wildcard scripts/*.sh) $(wildcard scripts/ci/*.sh) $(wildcard 
 PWSH_IMAGES  := mcr.microsoft.com/powershell@sha256:f0b564c57d11a5761c3a1c47d9a83ed11722ba945ef2839605c760daf416913c mcr.microsoft.com/powershell@sha256:810c4f1e0c9d23022c3ec18c50a6205ee4b60766f1739d329b2948df1fd7d5b0
 ALPINE_IMAGE := alpine@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8
 
-.PHONY: build fmt-check vet test lint toolchain-check vuln secrets actionlint shellcheck gates release-check repos-check install-check
+.PHONY: build fmt-check vet test lint toolchain-check vuln secrets actionlint shellcheck gates release-check repos-check install-check helm-kind
 
 build:
 	CGO_ENABLED=0 $(STOCK_GO) build -trimpath -ldflags '$(LDFLAGS)' -o $(BIN) ./cmd/halotrcer
@@ -40,13 +40,16 @@ fmt-check:
 
 vet: fmt-check
 	$(STOCK_GO) vet ./...
+	$(STOCK_GO) vet -tags integration,kind ./scripts/
+	$(STOCK_GO) vet ./testdata/standin/... ./testdata/mirror  # ./... skips testdata/; the smoke snapshot builds these
 
 test:
 	$(STOCK_GO) test -race -count=1 ./...
 
 lint:
 	@v="$$(golangci-lint version 2>&1)"; case "$$v" in *"version $(GOLANGCI_LINT_VERSION) "*) ;; *) echo "lint: need golangci-lint $(GOLANGCI_LINT_VERSION), have: $$v" >&2; exit 1;; esac
-	GOTOOLCHAIN=$(TOOLCHAIN) golangci-lint run ./...
+	GOTOOLCHAIN=$(TOOLCHAIN) golangci-lint run ./... ./testdata/standin/... ./testdata/mirror
+	GOTOOLCHAIN=$(TOOLCHAIN) golangci-lint run --build-tags integration,kind ./scripts/
 
 # Refuses anything but the stock release named on go.mod's toolchain line
 # (an X: experiment build, a distro build, or another version).
@@ -92,6 +95,12 @@ release-check:
 # docker, gpg, git and nfpm 2.47.0; runs the pinned Ubuntu, Fedora and
 # Alpine images several times and takes minutes. Ask before running it on a
 # shared machine (CLAUDE.md).
+# helm-kind installs the umbrella chart, built from the pinned tool charts,
+# into a kind cluster (scripts/kind_test.go). It skips, saying why, until
+# packaging/bundled-tools.env pins both tools' releases.
+helm-kind:
+	$(STOCK_GO) test -tags kind -count=1 -timeout 30m -run TestUmbrellaChartInKind -v ./scripts/
+
 repos-check:
 	$(STOCK_GO) test -tags integration -count=1 -timeout 30m -run 'TestSharedRepositories|TestPublishReposRetriesARace' -v ./scripts/
 

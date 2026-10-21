@@ -1,0 +1,97 @@
+name: integration
+
+# The heavy, human-started lane (PLAN.md M4, D9): kind and the container
+# tests, which cost minutes, never run on a push or a pull request, as in
+# Tokvera's and Sievant's integration.yml. It runs
+#   * make helm-kind: the umbrella chart, built from the pinned and verified
+#     Tokvera and Sievant charts, installed into a kind cluster with both
+#     tools on (scripts/kind_test.go). Until packaging/bundled-tools.env pins
+#     both tools' releases there is no chart to install, and the step says
+#     so in the run's summary rather than passing silently;
+#   * make repos-check: the shared signed apt and yum repositories, and
+#     apt/dnf/apk installs pulling in both tools;
+#   * make install-check: the install.ps1 tests under pwsh 7.1.5 and 7.4 and
+#     the install.sh tests under busybox, in their pinned images.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration
+  cancel-in-progress: false
+
+env:
+  GOTOOLCHAIN: local
+
+jobs:
+  integration:
+    # LINUX_RUNNER: see ci.yml and docs/development.md.
+    runs-on: ${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Runner tools (self-hosted only)
+        if: runner.environment == 'self-hosted'
+        run: sh scripts/ci/runner-tools.sh git make curl tar gzip sha256sum awk sed grep jq openssl gpg kubectl docker docker-daemon
+      - name: Go version from go.mod's toolchain line
+        id: go
+        run: |
+          v=$(awk '$1 == "toolchain" { sub(/^go/, "", $2); print $2 }' go.mod)
+          test -n "$v" || { echo "go.mod has no toolchain line"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache: false
+      # helm and oras at the release workflow's pins, checksum-verified.
+      - name: Install helm and oras
+        env:
+          HELM_VERSION: 4.3.0
+          HELM_SHA256: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
+          ORAS_VERSION: 1.3.4
+          ORAS_SHA256: f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/charttools"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSLo "$f" "https://get.helm.sh/$f"
+          echo "${HELM_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" --strip-components=1 linux-amd64/helm
+          f="oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/$f"
+          echo "${ORAS_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" oras
+          echo "$dir" >> "$GITHUB_PATH"
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Umbrella chart in kind
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          make helm-kind | tee "$RUNNER_TEMP/kind.log"
+          if grep -q -- '--- SKIP: TestUmbrellaChartInKind' "$RUNNER_TEMP/kind.log"; then
+            reason="$(grep -m1 'SKIP packaging/bundled-tools.env' "$RUNNER_TEMP/kind.log" | sed 's/^ *kind_test.go:[0-9]*: //')"
+            echo "::notice::helm-kind skipped: $reason"
+            printf '| Check | Result |\n| --- | --- |\n| helm-kind | %s |\n' "$reason" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Package repositories
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          # nfpm builds the fixture packages; the release workflow's pin.
+          dir="$RUNNER_TEMP/nfpm"; mkdir -p "$dir"; cd "$RUNNER_TEMP"
+          f=nfpm_2.47.0_Linux_x86_64.tar.gz
+          curl -fsSLo "$f" "https://github.com/goreleaser/nfpm/releases/download/v2.47.0/$f"
+          echo "${NFPM_SHA256}  $f" | sha256sum -c -
+          tar xzf "$f" -C "$dir" nfpm
+          cd "$GITHUB_WORKSPACE"
+          PATH="$dir:$PATH" make repos-check
+        env:
+          NFPM_SHA256: 0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783 # nfpm_2.47.0_Linux_x86_64.tar.gz, from its checksums.txt
+      - name: Installer tests in their images
+        if: ${{ !cancelled() }}
+        run: make install-check

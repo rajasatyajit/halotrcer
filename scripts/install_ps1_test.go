@@ -516,26 +516,86 @@ $r.StdOut
 	}
 }
 
-// TestPS1EveryNativeCallUsesTheHelper: install.ps1 invokes no native program
-// with the call operator, which Windows PowerShell 5.1 would abort on at the
-// program's first stderr line; Invoke-HalotrcerNative is the only way out.
+// TestPS1EveryNativeCallUsesTheHelper: install.ps1 and the smoke scripts
+// invoke no native program with the call operator, which Windows PowerShell
+// 5.1 would abort on at the program's first stderr line;
+// Invoke-HalotrcerNative is the only way out. The smoke scripts may call
+// PowerShell scripts with & (no stderr records), and native-check.ps1 its
+// control, which exists to show the abort.
 func TestPS1EveryNativeCallUsesTheHelper(t *testing.T) {
+	allowed := map[string][]string{
+		"install.ps1":            nil,
+		"smoke/smoke.ps1":        {`& $installer `, `& "$scoopDir\shims\scoop.ps1"`},
+		"smoke/run.ps1":          nil,
+		"smoke/scoop-local.ps1":  nil,
+		"smoke/winget.ps1":       nil,
+		"smoke/native-check.ps1": {`& $childExe @fixed 'x'`},
+	}
+	call := regexp.MustCompile(`(^|[=(|;]\s*)&\s*[$"'\w]`)
+	for file, ok := range allowed {
+		raw, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+	lines:
+		for i, line := range strings.Split(string(raw), "\n") {
+			code := strings.TrimSpace(strings.SplitN(line, "#", 2)[0])
+			if !call.MatchString(code) {
+				continue
+			}
+			for _, a := range ok {
+				if strings.HasPrefix(code, a) || strings.Contains(code, a) {
+					continue lines
+				}
+			}
+			t.Errorf("%s:%d calls a program with & : %s", file, i+1, strings.TrimSpace(line))
+		}
+	}
 	raw, err := os.ReadFile("install.ps1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	call := regexp.MustCompile(`(^|[=(|;]\s*)&\s*[$"'\w]`)
-	for i, line := range strings.Split(string(raw), "\n") {
-		code := strings.TrimSpace(strings.SplitN(line, "#", 2)[0])
-		if call.MatchString(code) {
-			t.Errorf("install.ps1:%d calls a program with & : %s", i+1, strings.TrimSpace(line))
-		}
-	}
-	// And no Start-Process, Invoke-Expression or backtick-free shortcut
-	// around the helper.
 	for _, bad := range []string{"Start-Process", "Invoke-Expression", "cmd /c", "cmd.exe"} {
 		if strings.Contains(string(raw), bad) {
 			t.Errorf("install.ps1 uses %s", bad)
+		}
+	}
+}
+
+// TestSmokeScriptsAvoidTheInstallersNames: the smoke scripts dot-source
+// install.ps1, which binds its parameters in their scope; PowerShell names
+// are case-insensitive, so a smoke script using $dir or $version would have
+// it overwritten (Tokvera's $repo bug, smoke run 39022846757).
+func TestSmokeScriptsAvoidTheInstallersNames(t *testing.T) {
+	names := []string{"Only", "Version", "Dir", "Global", "DryRun", "NoVerify", "RequireCosign"}
+	for _, f := range []string{"smoke/smoke.ps1", "smoke/run.ps1", "smoke/native-check.ps1"} {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, n := range names {
+			// "$global:" is a scope modifier, not a variable named $Global.
+			if re := regexp.MustCompile(`(?i)\$(script:)?` + n + `(\b[^:]|$)`); re.Match(raw) {
+				t.Errorf("%s uses $%s, which dot-sourcing install.ps1 sets", f, n)
+			}
+		}
+	}
+}
+
+// TestPS1SmokeScriptsParse: every PowerShell script parses (they run only on
+// Windows runners, so a syntax error would otherwise first show there).
+func TestPS1SmokeScriptsParse(t *testing.T) {
+	pwsh := needPwsh(t)
+	files, err := filepath.Glob("smoke/*.ps1")
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no smoke scripts: %v", err)
+	}
+	for _, f := range files {
+		abs, _ := filepath.Abs(f)
+		parse := `$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('` + strings.ReplaceAll(abs, "'", "''") +
+			`',[ref]$t,[ref]$e)|Out-Null;if($e){$e|ForEach-Object{$_.ToString()};exit 1}`
+		if out, err := exec.CommandContext(t.Context(), pwsh, "-NoProfile", "-Command", parse).CombinedOutput(); err != nil {
+			t.Errorf("%s: parse errors:\n%s", f, out)
 		}
 	}
 }

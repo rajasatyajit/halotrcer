@@ -1,0 +1,422 @@
+{
+  "report_version": 1,
+  "generator": "sievant v0.1.0-157-gd8a8bcf",
+  "generated_at": "2026-10-20T14:27:31.67133305Z",
+  "period": {
+    "from": "2026-09-20T14:27:31.67133305Z",
+    "to": "2026-10-20T14:27:31.67133305Z",
+    "label": "30d"
+  },
+  "sources": {
+    "local_proxy": true,
+    "audit_store": "~/.local/state/sievant/audit.db",
+    "audit_store_note": "no audit database there yet",
+    "clients_read": false
+  },
+  "summary": {
+    "coverage": {
+      "state": "unknown",
+      "through_sievant": 0,
+      "servers": 0,
+      "wrapped_with_policy": 0,
+      "wrapped_proxy_defaults": 0
+    },
+    "requests": 0,
+    "blocked": 0,
+    "limited": 0,
+    "would_block": 0,
+    "redactions": 0,
+    "withheld": 0,
+    "controls_enforced": 7,
+    "controls_total": 12,
+    "gaps": {
+      "high": 1,
+      "info": 1,
+      "low": 2,
+      "medium": 1
+    }
+  },
+  "architecture": {
+    "deployment": "Local proxy: each MCP client launches its servers through `sievant proxy` (sievant wrap)",
+    "transport": "stdio",
+    "tls": "not applicable (stdio: no network listener)",
+    "identity": "static: the stdio process is the agent",
+    "mode": "enforce",
+    "agents": [
+      "one local agent per wrapped server"
+    ],
+    "connectors": [],
+    "stages": [
+      "Authenticate the agent",
+      "Policy: is this agent allowed this tool, prompt or resource, with these arguments",
+      "Rate limit",
+      "Input checks: credentials and personal data in the arguments",
+      "Prompt-injection scoring of the arguments",
+      "Forward to the MCP server (SSRF guard, response size cap)",
+      "Output checks: redaction, prompt-injection scoring, row and byte budgets",
+      "Audit record (inputs sanitized and HMAC-keyed)"
+    ]
+  },
+  "controls": [
+    {
+      "id": "enforcement-mode",
+      "name": "Enforcement mode (enforce or observe)",
+      "config": "mode",
+      "status": "enforced",
+      "detail": "Mode enforce: policy decisions stop the calls they refuse."
+    },
+    {
+      "id": "agent-identity",
+      "name": "Agent authentication and identity",
+      "config": "identity",
+      "status": "enforced",
+      "detail": "Each wrapped server is reached only by the client process that launched it (stdio); its calls are recorded under the agent name the wrap gives."
+    },
+    {
+      "id": "transport-security",
+      "name": "Transport security for agent connections",
+      "config": "server.transport, server.http.tls",
+      "status": "not_applicable",
+      "detail": "stdio: agents reach Sievant through a local pipe, not the network."
+    },
+    {
+      "id": "client-coverage",
+      "name": "MCP client servers routed through Sievant",
+      "config": "(sievant wrap)",
+      "status": "not_applicable",
+      "detail": "Client configurations were not read for this report."
+    },
+    {
+      "id": "policies",
+      "name": "Deny-by-default policies for tools, prompts and resources, per agent",
+      "config": "policies",
+      "status": "partial",
+      "detail": "Deny by default, but `sievant proxy` allows every tool of the server it fronts; per-agent allowlists need a configuration file.",
+      "owasp": [
+        "LLM06"
+      ]
+    },
+    {
+      "id": "argument-constraints",
+      "name": "Schema validation and argument constraints (min, max, in, matches, path_under, url_hosts)",
+      "config": "policies[].constraints",
+      "status": "off",
+      "detail": "No argument constraints; arguments are still validated against each tool's input schema.",
+      "owasp": [
+        "LLM05",
+        "LLM06"
+      ]
+    },
+    {
+      "id": "argument-rules",
+      "name": "Path and URL argument rules for every tool",
+      "config": "arguments",
+      "status": "off",
+      "detail": "No path or URL argument rules (packs fs-paths and egress).",
+      "owasp": [
+        "LLM02",
+        "LLM06"
+      ]
+    },
+    {
+      "id": "input-sanitization",
+      "name": "Credentials and personal data in tool arguments blocked or redacted",
+      "config": "sanitization.input_credentials, sanitization.input_pii",
+      "status": "partial",
+      "detail": "Credentials in arguments: block; personal data in arguments: audit.",
+      "owasp": [
+        "LLM02"
+      ]
+    },
+    {
+      "id": "output-redaction",
+      "name": "Credentials and personal data redacted from tool results",
+      "config": "sanitization.detectors",
+      "status": "enforced",
+      "detail": "Results are redacted before the agent sees them: email, credit_card, us_ssn, jwt, aws_access_key, pem_private_key, password.",
+      "owasp": [
+        "LLM02"
+      ]
+    },
+    {
+      "id": "injection-detection",
+      "name": "Prompt-injection detection on arguments and results (flag, annotate, block)",
+      "config": "injection",
+      "status": "partial",
+      "detail": "Arguments and results are scored and suspect ones recorded (action flag); nothing is blocked or annotated.",
+      "owasp": [
+        "LLM01"
+      ]
+    },
+    {
+      "id": "tool-pinning",
+      "name": "Tool definitions read once, pinned, and pinned on first use",
+      "config": "connectors.mcp[].tools[].sha256, pinning",
+      "status": "not_applicable",
+      "detail": "No wrapped servers were found.",
+      "owasp": [
+        "LLM01",
+        "LLM03"
+      ]
+    },
+    {
+      "id": "withheld-primitives",
+      "name": "Upstream resources and prompts not served unchecked",
+      "config": "connectors.mcp[].serve_resources, serve_prompts",
+      "status": "enforced",
+      "detail": "Upstream resources and prompts are withheld unless a connector serves them, and served ones pass the output checks.",
+      "owasp": [
+        "LLM01",
+        "LLM02"
+      ]
+    },
+    {
+      "id": "rate-limits",
+      "name": "Rate limits per agent and per tool",
+      "config": "rate_limit",
+      "status": "enforced",
+      "detail": "Rate limits: 50 calls a second per agent by default (bursts of 100).",
+      "owasp": [
+        "LLM10"
+      ]
+    },
+    {
+      "id": "output-budgets",
+      "name": "Row, byte and response-memory budgets",
+      "config": "output, server.limits",
+      "status": "enforced",
+      "detail": "Results are capped at 65536 bytes and 1000 rows; row and byte budgets limit what an agent reads over time.",
+      "owasp": [
+        "LLM10"
+      ]
+    },
+    {
+      "id": "ssrf-guard",
+      "name": "SSRF guard on outbound connectors",
+      "config": "connectors.*.allow_private_networks",
+      "status": "not_applicable",
+      "detail": "No network connectors.",
+      "owasp": [
+        "LLM06"
+      ]
+    },
+    {
+      "id": "scan",
+      "name": "Client configuration audit (sievant scan)",
+      "config": "(command)",
+      "status": "not_applicable",
+      "detail": "Client configurations were not read for this report.",
+      "owasp": [
+        "LLM02",
+        "LLM03",
+        "LLM06"
+      ]
+    },
+    {
+      "id": "audit-trail",
+      "name": "Audit trail of every call and security event",
+      "config": "audit",
+      "status": "enforced",
+      "detail": "Every call and security event is recorded in the local audit store, kept 30 days; inputs are sanitized and keyed with an HMAC, so a record can be matched to its input without storing it."
+    }
+  ],
+  "activity": null,
+  "gaps": [
+    {
+      "id": "no-audit-trail",
+      "severity": "high",
+      "title": "No audit trail to report on",
+      "detail": "The audit store could not be read (no audit database there yet), so this report shows configuration only, no activity.",
+      "fix": "Run Sievant (sievant proxy through sievant wrap, or sievant serve) so it records calls, and point --audit at its store."
+    },
+    {
+      "id": "allow-all-proxy",
+      "severity": "medium",
+      "title": "Wrapped servers allow every tool",
+      "detail": "`sievant proxy` checks every call but allows every tool of the server it fronts, so no per-agent allowlist limits what an agent can call.",
+      "fix": "Write a configuration (sievant init --profile balanced or strict), let it observe, then narrow it with sievant policy suggest and apply."
+    },
+    {
+      "id": "injection-flag-only",
+      "severity": "low",
+      "title": "Suspected prompt injection is recorded, not acted on",
+      "detail": "With action flag, suspect results reach the model unchanged; the audit trail records them.",
+      "fix": "Set injection.action to annotate (the injection pack) or block for the agents that need it."
+    },
+    {
+      "id": "pii-recorded",
+      "severity": "low",
+      "title": "Personal data in tool arguments is passed on",
+      "detail": "sanitization.input_pii is audit: personal data the agent puts into arguments reaches the backend; the audit record notes it, sanitized.",
+      "fix": "Set sanitization.input_pii to redact or block (pack secrets-pii)."
+    },
+    {
+      "id": "clients-not-read",
+      "severity": "info",
+      "title": "MCP client configurations were not checked",
+      "detail": "This report did not read the MCP client configurations, so it cannot say which servers bypass Sievant.",
+      "fix": "Run sievant report without --no-clients, or sievant scan."
+    }
+  ],
+  "questionnaire": {
+    "mapping_version": 1,
+    "disclaimer": "This section maps Sievant's controls to topics that security questionnaires commonly ask about, with the status this report found for each. It describes controls and observed activity; it is not a certification, an audit or an attestation, and it covers only the MCP tool traffic that passes through Sievant.",
+    "topics": [
+      {
+        "id": "access-control",
+        "title": "Access control",
+        "question": "How do you control which tools and data your AI agents can reach, and how are agents authenticated?",
+        "status": "partly in place",
+        "controls": [
+          {
+            "id": "agent-identity",
+            "name": "Agent authentication and identity",
+            "status": "enforced",
+            "detail": "Each wrapped server is reached only by the client process that launched it (stdio); its calls are recorded under the agent name the wrap gives."
+          },
+          {
+            "id": "policies",
+            "name": "Deny-by-default policies for tools, prompts and resources, per agent",
+            "status": "partial",
+            "detail": "Deny by default, but `sievant proxy` allows every tool of the server it fronts; per-agent allowlists need a configuration file."
+          },
+          {
+            "id": "argument-constraints",
+            "name": "Schema validation and argument constraints (min, max, in, matches, path_under, url_hosts)",
+            "status": "off",
+            "detail": "No argument constraints; arguments are still validated against each tool's input schema."
+          },
+          {
+            "id": "argument-rules",
+            "name": "Path and URL argument rules for every tool",
+            "status": "off",
+            "detail": "No path or URL argument rules (packs fs-paths and egress)."
+          },
+          {
+            "id": "enforcement-mode",
+            "name": "Enforcement mode (enforce or observe)",
+            "status": "enforced",
+            "detail": "Mode enforce: policy decisions stop the calls they refuse."
+          }
+        ]
+      },
+      {
+        "id": "logging-monitoring",
+        "title": "Logging and monitoring",
+        "question": "Are the actions of your AI agents logged, and could you investigate an incident from the logs?",
+        "status": "in place",
+        "controls": [
+          {
+            "id": "audit-trail",
+            "name": "Audit trail of every call and security event",
+            "status": "enforced",
+            "detail": "Every call and security event is recorded in the local audit store, kept 30 days; inputs are sanitized and keyed with an HMAC, so a record can be matched to its input without storing it."
+          }
+        ]
+      },
+      {
+        "id": "data-protection",
+        "title": "Data protection",
+        "question": "How do you keep credentials and personal data out of what AI agents send to tools and receive from them, and how is that traffic protected in transit?",
+        "status": "partly in place",
+        "controls": [
+          {
+            "id": "input-sanitization",
+            "name": "Credentials and personal data in tool arguments blocked or redacted",
+            "status": "partial",
+            "detail": "Credentials in arguments: block; personal data in arguments: audit."
+          },
+          {
+            "id": "output-redaction",
+            "name": "Credentials and personal data redacted from tool results",
+            "status": "enforced",
+            "detail": "Results are redacted before the agent sees them: email, credit_card, us_ssn, jwt, aws_access_key, pem_private_key, password."
+          },
+          {
+            "id": "withheld-primitives",
+            "name": "Upstream resources and prompts not served unchecked",
+            "status": "enforced",
+            "detail": "Upstream resources and prompts are withheld unless a connector serves them, and served ones pass the output checks."
+          },
+          {
+            "id": "transport-security",
+            "name": "Transport security for agent connections",
+            "status": "not_applicable",
+            "detail": "stdio: agents reach Sievant through a local pipe, not the network."
+          }
+        ]
+      },
+      {
+        "id": "third-party-components",
+        "title": "Third-party components",
+        "question": "How do you vet and control the third-party MCP servers and tools your agents use?",
+        "status": "not in place",
+        "controls": [
+          {
+            "id": "tool-pinning",
+            "name": "Tool definitions read once, pinned, and pinned on first use",
+            "status": "not_applicable",
+            "detail": "No wrapped servers were found."
+          },
+          {
+            "id": "scan",
+            "name": "Client configuration audit (sievant scan)",
+            "status": "not_applicable",
+            "detail": "Client configurations were not read for this report."
+          },
+          {
+            "id": "client-coverage",
+            "name": "MCP client servers routed through Sievant",
+            "status": "not_applicable",
+            "detail": "Client configurations were not read for this report."
+          },
+          {
+            "id": "ssrf-guard",
+            "name": "SSRF guard on outbound connectors",
+            "status": "not_applicable",
+            "detail": "No network connectors."
+          }
+        ]
+      },
+      {
+        "id": "ai-agent-safeguards",
+        "title": "AI agent safeguards",
+        "question": "How do you limit prompt injection and runaway or excessive agent behaviour?",
+        "status": "partly in place",
+        "controls": [
+          {
+            "id": "injection-detection",
+            "name": "Prompt-injection detection on arguments and results (flag, annotate, block)",
+            "status": "partial",
+            "detail": "Arguments and results are scored and suspect ones recorded (action flag); nothing is blocked or annotated."
+          },
+          {
+            "id": "rate-limits",
+            "name": "Rate limits per agent and per tool",
+            "status": "enforced",
+            "detail": "Rate limits: 50 calls a second per agent by default (bursts of 100)."
+          },
+          {
+            "id": "output-budgets",
+            "name": "Row, byte and response-memory budgets",
+            "status": "enforced",
+            "detail": "Results are capped at 65536 bytes and 1000 rows; row and byte budgets limit what an agent reads over time."
+          },
+          {
+            "id": "policies",
+            "name": "Deny-by-default policies for tools, prompts and resources, per agent",
+            "status": "partial",
+            "detail": "Deny by default, but `sievant proxy` allows every tool of the server it fronts; per-agent allowlists need a configuration file."
+          }
+        ]
+      }
+    ]
+  },
+  "owasp_mapping": {
+    "framework": "OWASP Top 10 for LLM Applications",
+    "edition": "2025",
+    "mapping_version": 1,
+    "source": "https://genai.owasp.org/llm-top-10/"
+  },
+  "disclaimer": "This report describes how Sievant is configured and what its audit trail recorded in the period. It is generated by the software from local data; it is not a certification, an audit or an attestation, and it covers only the MCP traffic that passes through Sievant."
+}

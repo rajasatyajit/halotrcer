@@ -67,6 +67,18 @@ if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "no install
 $smokeTag = (Get-Content -LiteralPath (Join-Path $smokeDist 'TAG') -TotalCount 1).Trim()
 $work = Join-Path ([System.IO.Path]::GetTempPath()) ('halotrcer-smoke-' + [System.Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
+
+# No cosign: the snapshot carries no signatures (snapshot.sh drops the cosign
+# blocks), and install.ps1 rightly refuses a release whose signature is
+# missing when cosign is installed, so PATH loses every directory holding a
+# cosign.exe (smoke.sh does the same). Signatures are verified by
+# snapshot.sh's release mode, release.yml and the installers' tests.
+$smokeHidden = @($env:PATH -split ';' | Where-Object { $_ -and (Test-Path -LiteralPath (Join-Path $_ 'cosign.exe') -PathType Leaf) })
+if ($smokeHidden.Count -gt 0) {
+	$env:PATH = (@($env:PATH -split ';' | Where-Object { $smokeHidden -notcontains $_ }) -join ';')
+	Say "cosign hidden from PATH ($($smokeHidden -join ', ')): the snapshot carries no signatures"
+}
+if (Get-Command cosign -CommandType Application -ErrorAction SilentlyContinue) { Fail 'could not hide cosign' }
 $start = Get-Date
 
 # Pinned third-party inputs for the Scoop channel: Scoop's installer and the

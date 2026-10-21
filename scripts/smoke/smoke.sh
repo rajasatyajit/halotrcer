@@ -76,6 +76,38 @@ cleanup() {
 	rm -rf "$work" 2>/dev/null || true
 }
 trap cleanup EXIT
+
+# --- No cosign ---------------------------------------------------------------------
+# halotrcer's snapshot is never signed (snapshot.sh drops the cosign blocks:
+# keyless signing would publish to Sigstore's log), nor are the stand-ins,
+# and install.sh and `halotrcer install` rightly refuse a release whose
+# signature is missing when cosign is installed. So every channel runs with
+# cosign hidden: each PATH directory holding one is replaced by a directory
+# of links to everything else in it. Signatures are verified by snapshot.sh's
+# release mode (the tools' real releases), release.yml and the installers'
+# tests against a fake signed release.
+hidden=0
+newpath=""
+old_ifs=$IFS
+IFS=:
+for d in $PATH; do
+	if [ -n "$d" ] && [ -e "$d/cosign" ]; then
+		hidden=$((hidden + 1))
+		shadow="$work/path$hidden"
+		mkdir -p "$shadow"
+		for f in "$d"/*; do
+			[ "${f##*/}" = cosign ] || ln -s "$f" "$shadow/"
+		done
+		d="$shadow"
+	fi
+	newpath="${newpath:+$newpath:}$d"
+done
+IFS=$old_ifs
+PATH="$newpath"
+export PATH
+if command -v cosign >/dev/null 2>&1; then fail "could not hide cosign ($(command -v cosign))"; fi
+[ "$hidden" -eq 0 ] || say "cosign hidden from PATH: the snapshot carries no signatures"
+
 start=$(date +%s)
 
 # --- The world: the mirror -----------------------------------------------------

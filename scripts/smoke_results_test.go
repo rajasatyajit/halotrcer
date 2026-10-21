@@ -2,7 +2,9 @@ package scripts
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -75,5 +77,50 @@ func TestRunRecordsAFailure(t *testing.T) {
 	}
 	if strings.Count(got, "RESULT own ") != 1 || strings.Count(got, "RESULT clean ") != 1 {
 		t.Errorf("a channel's own line was doubled:\n%s", got)
+	}
+}
+
+// TestSmokeHidesCosign: the snapshot carries no signatures, so smoke.sh runs
+// every channel with cosign hidden; everything else in cosign's directory
+// stays on PATH. The fake mirror (the first program smoke.sh starts) records
+// what it can see.
+func TestSmokeHidesCosign(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("smoke.sh is the Linux and macOS smoke")
+	}
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "bin")
+	dist := filepath.Join(dir, "dist")
+	seen := filepath.Join(dir, "seen")
+	writeFile(t, filepath.Join(bin, "cosign"), "#!/bin/sh\nexit 0\n", 0o755)
+	writeFile(t, filepath.Join(bin, "beside-cosign"), "#!/bin/sh\nexit 0\n", 0o755)
+	writeFile(t, filepath.Join(dist, "TAG"), "v0.0.1-snapshot-test\n", 0o644)
+	writeFile(t, filepath.Join(dist, "TOOLS"), "stand-in\n", 0o644)
+	arch := map[string]string{"amd64": "amd64", "arm64": "arm64"}[runtime.GOARCH]
+	if arch == "" {
+		t.Skip("unsupported test CPU")
+	}
+	writeFile(t, filepath.Join(dist, "mirror-"+runtime.GOOS+"-"+arch), `#!/bin/sh
+{ command -v cosign || echo "no cosign"; command -v beside-cosign || echo "no beside-cosign"; } >`+seen+`
+while [ "$1" != --url-file ]; do shift; done
+echo http://127.0.0.1:1 >"$2"
+exec sleep 30
+`, 0o755)
+	path, err := filepath.Abs("smoke/smoke.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), "sh", path, "no-such-channel")
+	cmd.Env = []string{"PATH=" + bin + ":" + os.Getenv("PATH"), "HOME=" + t.TempDir(), "LC_ALL=C", "SMOKE_DIST=" + dist}
+	out, _ := cmd.CombinedOutput()
+	if !strings.Contains(string(out), "cosign hidden from PATH") || !strings.Contains(string(out), "unknown channel no-such-channel") {
+		t.Fatalf("smoke.sh:\n%s", out)
+	}
+	b, err := os.ReadFile(seen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lines := strings.Split(strings.TrimSpace(string(b)), "\n"); len(lines) != 2 || lines[0] != "no cosign" || !strings.HasSuffix(lines[1], "/beside-cosign") {
+		t.Errorf("the mirror saw:\n%s", b)
 	}
 }

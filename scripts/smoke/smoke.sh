@@ -246,13 +246,14 @@ brew)
 	[ "$os" = darwin ] || fail "brew: macOS only"
 	# smoke.yml's homebrew_developer input: Homebrew raises on a deprecation
 	# instead of warning when HOMEBREW_DEVELOPER is set (7.0.10
-	# Library/Homebrew/utils/output.rb, disable_for_developers).
+	# Library/Homebrew/utils/output.rb, disable_for_developers), so installing
+	# under it fails (docs/releasing.md). With the input, install as
+	# docs/install.md tells those users to, without it; then upgrade and
+	# uninstall with it.
 	dev=""
 	if [ "${SMOKE_HOMEBREW_DEVELOPER:-}" = 1 ]; then
-		HOMEBREW_DEVELOPER=1
-		export HOMEBREW_DEVELOPER
-		dev=" (HOMEBREW_DEVELOPER=1)"
-		say "HOMEBREW_DEVELOPER=1 for this channel's brew commands"
+		dev=1
+		say "install without HOMEBREW_DEVELOPER, then upgrade and uninstall with HOMEBREW_DEVELOPER=1"
 	fi
 	# A local tap under the real tap's name, so the cask's dependencies
 	# (rajasatyajit/tap/tokvera, .../sievant) resolve to the casks here.
@@ -276,7 +277,7 @@ brew)
 	for p in halotrcer tokvera sievant; do
 		brew list --cask "rajasatyajit/tap/$p" >/dev/null 2>&1 || fail "brew: the $p cask is not installed"
 	done
-	pass "the documented brew command installed the halotrcer, tokvera and sievant casks$dev"
+	pass "the documented brew command installed the halotrcer, tokvera and sievant casks"
 	bin="$(brew --prefix)/bin/halotrcer"
 	for p in halotrcer tokvera sievant; do
 		f="$(readlink -f "$(brew --prefix)/bin/$p" 2>/dev/null || echo "$(brew --prefix)/bin/$p")"
@@ -285,6 +286,36 @@ brew)
 		fi
 	done
 	pass "com.apple.quarantine is set on none of the three binaries"
+	if [ -n "$dev" ]; then
+		# A real upgrade: the halotrcer cask's version raised, with the same
+		# archive and sha256, so brew loads both the installed and the new cask.
+		sed -E 's/^( *version ")[^"]*"/\19999.0.0"/' "$casks/halotrcer.rb" >"$work/halotrcer.rb"
+		grep -q '^ *version "9999.0.0"' "$work/halotrcer.rb" || fail "brew: could not raise the halotrcer cask's version"
+		cp "$work/halotrcer.rb" "$casks/halotrcer.rb"
+		bad=""
+		if HOMEBREW_DEVELOPER=1 HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_FROM_API=1 \
+			brew upgrade --cask rajasatyajit/tap/halotrcer &&
+			brew list --cask --versions rajasatyajit/tap/halotrcer | grep -q ' 9999\.0\.0$'; then
+			pass "with HOMEBREW_DEVELOPER=1, brew upgrade upgraded the halotrcer cask"
+		else
+			say "with HOMEBREW_DEVELOPER=1, brew upgrade did not upgrade the halotrcer cask"
+			bad="upgrade"
+		fi
+		if HOMEBREW_DEVELOPER=1 HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_FROM_API=1 \
+			brew uninstall --cask rajasatyajit/tap/halotrcer rajasatyajit/tap/tokvera rajasatyajit/tap/sievant; then
+			for p in halotrcer tokvera sievant; do
+				if brew list --cask "rajasatyajit/tap/$p" >/dev/null 2>&1; then bad="${bad:+$bad and }uninstall"; break; fi
+			done
+		else
+			bad="${bad:+$bad and }uninstall"
+		fi
+		case "$bad" in *uninstall) say "with HOMEBREW_DEVELOPER=1, brew uninstall did not remove all three casks" ;; *) pass "with HOMEBREW_DEVELOPER=1, brew uninstall removed all three casks" ;; esac
+		[ -z "$bad" ] || fail "with HOMEBREW_DEVELOPER=1, brew $bad failed"
+		# The casks are gone, so the report check below has nothing to run;
+		# the channel without the input covers it.
+		result "PASS ($checks checks)"
+		exit 0
+	fi
 	;;
 goinstall)
 	# As a user would: no -ldflags, so the version comes from the build info.

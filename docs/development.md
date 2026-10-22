@@ -86,7 +86,7 @@ git make curl tar gzip sha256sum awk sed grep jq openssl gpg kubectl docker dock
 | `include_windows` | boolean | `false` |
 | `homebrew_developer` | boolean | `false` |
 
-`homebrew_developer` sets `HOMEBREW_DEVELOPER=1` for the macOS brew channel only, where Homebrew turns a deprecation into an error (docs/releasing.md, "Homebrew cask hooks"). It needs `include_macos`.
+`homebrew_developer` changes the macOS brew channel only. Homebrew 7 turns the casks' `postflight` deprecation into an error when `HOMEBREW_DEVELOPER` is set, so the channel installs without it, as docs/install.md tells those users to, then runs `brew upgrade` (a real one: the halotrcer cask's version is raised over the same archive) and `brew uninstall` with `HOMEBREW_DEVELOPER=1`, and stops there; the report check is left to the run without the input (docs/releasing.md, "Homebrew cask hooks"). It needs `include_macos`.
 
 The macOS and Windows jobs run only when their input is true. Otherwise the `not-requested` job records each of their channels as `SKIP not requested (owner approves macOS/Windows runs per release candidate)`. That's a SKIP with its reason, which `check-results.sh` accepts, so the run still names every channel.
 

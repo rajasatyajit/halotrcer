@@ -36,7 +36,7 @@ on:
         type: boolean
         default: false
       homebrew_developer:
-        description: Set HOMEBREW_DEVELOPER=1 for the macOS brew channel only (does a deprecation become an error?)
+        description: macOS brew channel only - install without HOMEBREW_DEVELOPER, then upgrade and uninstall with HOMEBREW_DEVELOPER=1
         type: boolean
         default: false
 

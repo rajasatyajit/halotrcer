@@ -51,9 +51,34 @@ func TestSmokeWorkflow(t *testing.T) {
 			}
 		}
 	}
-	if sh := string(root(t, "scripts/smoke/smoke.sh")); !strings.Contains(sh[strings.Index(sh, "\nbrew)"):strings.Index(sh, "\ngoinstall)")], "SMOKE_HOMEBREW_DEVELOPER") ||
-		strings.Count(sh, "SMOKE_HOMEBREW_DEVELOPER") != 1 {
+	sh := string(root(t, "scripts/smoke/smoke.sh"))
+	brew := sh[strings.Index(sh, "\nbrew)"):strings.Index(sh, "\ngoinstall)")]
+	if !strings.Contains(brew, "SMOKE_HOMEBREW_DEVELOPER") || strings.Count(sh, "SMOKE_HOMEBREW_DEVELOPER") != 1 {
 		t.Error("smoke.sh does not set HOMEBREW_DEVELOPER in its brew channel only")
+	}
+	// With the input, the channel installs as docs/install.md tells
+	// HOMEBREW_DEVELOPER users to, without it, and sets it on the upgrade and
+	// the uninstall only: per command, never exported.
+	if strings.Contains(sh, "export HOMEBREW_DEVELOPER") {
+		t.Error("smoke.sh exports HOMEBREW_DEVELOPER")
+	}
+	for _, c := range []struct {
+		cmd  string
+		want bool
+	}{{"brew install --cask", false}, {"brew upgrade --cask", true}, {"brew uninstall --cask", true}} {
+		i := strings.Index(brew, c.cmd)
+		if i < 0 {
+			t.Errorf("smoke.sh's brew channel has no %q", c.cmd)
+			continue
+		}
+		// The command and the continued line before it.
+		start := strings.LastIndex(brew[:i], "\n")
+		if prev := strings.LastIndex(brew[:start], "\n"); strings.HasSuffix(strings.TrimRight(brew[prev:start], " \t"), "\\") {
+			start = prev
+		}
+		if got := strings.Contains(brew[start:i], "HOMEBREW_DEVELOPER=1"); got != c.want {
+			t.Errorf("smoke.sh's %q runs with HOMEBREW_DEVELOPER=1: %v, want %v", c.cmd, got, c.want)
+		}
 	}
 	if strings.Contains(raw, "\n  push:") || strings.Contains(raw, "\n  schedule:") || strings.Contains(raw, "\n  pull_request:") {
 		t.Error("smoke.yml runs on something other than workflow_dispatch")

@@ -43,6 +43,10 @@ These rank first. A poor Tokvera latency grade is shown as a *reliability concer
 
 `--skip-sievant` runs only Tokvera; `--skip-tokvera` runs only Sievant. `install.sh --only tokvera` (or `sievant`) installs just one tool.
 
+## Homebrew says "Calling `postflight` is deprecated".
+
+That's a warning, and the install still works. It comes from the step in each cask that removes macOS's quarantine flag, which Homebrew 7 wants written in a newer form. The casks will switch once GoReleaser, which writes them, supports that form. If you have `HOMEBREW_DEVELOPER` set, Homebrew treats the warning as an error and installs nothing. Run the install with `env -u HOMEBREW_DEVELOPER` in front, or use `install.sh` ([install.md](install.md#homebrew-macos)).
+
 ## No endpoint to hand?
 
 `halotrcer check --demo` runs Tokvera against its built-in simulator: no endpoint, no key and no confirmation. The report says clearly that the numbers are simulated.

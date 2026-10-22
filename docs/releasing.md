@@ -23,6 +23,7 @@ Halotrcer bundles two other releases, so it can only be released after both of t
   - Who it affects: anyone with `HOMEBREW_DEVELOPER` set, on Homebrew 7, for every cask of all three projects, since Tokvera's and Sievant's `.goreleaser.yaml` write the same `postflight` as ours. Trusting the tap doesn't help: the casks were trusted in this run and still failed to load.
   - Not tested: whether `brew upgrade` and `brew uninstall` of an already-installed cask fail the same way. They load the cask too, so they probably do.
   - No cask is changed. The options are in "Homebrew cask hooks" below.
+- [ ] **Before the first release candidate: is GoReleaser v2.19.0 out?** If it is, switch the casks to `install_steps` ("Homebrew cask hooks", below). If it isn't, re-decide option 3 there, the hand-written `postflight_steps` through `custom_block`, which GoReleaser 2.18.3 can emit.
 - [ ] **For a stable Halotrcer release:** both tools' winget manifests are merged into `microsoft/winget-pkgs`. winget-pkgs validation refuses a manifest whose dependencies are not in the catalog yet.
 - [ ] **The repository is public** (it is, since 2026-10-21). The preflight refuses a private one: attestations need it, and every channel downloads release assets without credentials. Tokvera's and Sievant's repositories must be public too: `halotrcer install` and every package manager download their releases without credentials.
 - [ ] **Private vulnerability reporting is on** (Settings → Code security → Private vulnerability reporting). SECURITY.md offers it as a reporting channel.
@@ -135,10 +136,21 @@ Every cask removes macOS's quarantine flag from its binary in a Ruby `postflight
 - **Until then, `HOMEBREW_DEVELOPER` users can't install the casks** (the checklist result above). The options, none applied yet:
   1. **Document the workaround (no cask change).** In docs/install.md and docs/faq.md, say that with `HOMEBREW_DEVELOPER` set, brew refuses these casks; install with `env -u HOMEBREW_DEVELOPER brew install --cask ...` (without the variable, run 39651710001 installed all three on the same Homebrew), or with `install.sh`, which doesn't use Homebrew. The tap trust route is not a workaround: in the run, brew printed "Trusted cask" for all three and still failed.
   2. **Switch to `install_steps` when GoReleaser v2.19.0 ships** (the item above). That fixes it for everyone, in all three repositories.
-  3. **Switch sooner with a hand-written step.** Drop `hooks.post.install` and write the `postflight_steps` block into the cask through a GoReleaser key that passes raw Ruby (to be checked against `goreleaser jsonschema` at 2.18.3 first). That's a cask change in all three repositories, and it is replaced by option 2 later.
+  3. **Switch sooner with a hand-written step.** GoReleaser 2.18.3 can emit it. `goreleaser jsonschema` at 2.18.3 gives `HomebrewCaskHook` only `install` and `uninstall` (`additionalProperties: false`), so no step keys, but `HomebrewCask` has `custom_block`, a plain string. The cask template writes it, one line at a time, at the top of the `cask do` block (`internal/pipe/cask/templates/cask.rb:4-9` at v2.18.3). Then `cask.go` runs the whole rendered cask through GoReleaser's templating once more (line 380). So Homebrew's `{{staged_path}}` token must be written as the Go template string `{{ "{{staged_path}}" }}`; a bare `{{staged_path}}` fails the build with `function "staged_path" not defined` (checked with `text/template`, which GoReleaser's `tmpl` uses). The change in each repository's `.goreleaser.yaml` would be to drop `hooks.post.install` and add:
+
+     ```yaml
+     custom_block: |
+       postflight_steps do
+         on_macos do
+           run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ "{{staged_path}}" }}/<binary>"], must_succeed: false
+         end
+       end
+     ```
+
+     Homebrew documents `postflight_steps`, `run`, `on_macos` and `{{staged_path}}` at both runner versions (`docs/Cask-Cookbook.md`, "Stanza: `*flight_steps`", at 6.0.18 and 7.0.10), and both define the stanza (`INSTALL_STEP_ARTIFACT_CLASSES`, `Library/Homebrew/cask/dsl.rb`). Not yet tested: no cask has been built this way, and a Homebrew too old to know the stanza would refuse the cask. Option 2 replaces it later.
   4. **Do nothing.** `HOMEBREW_DEVELOPER` is a setting for people who work on Homebrew itself; everyone else only sees the warning until 2027-12-11.
 
-  Recommendation: option 1 now, as a short docs change in each repository, then option 2. Option 3 changes three repositories' release config for a small audience and is thrown away at v2.19.0.
+  Decided (owner, 2026-10-22): option 1 now, option 2 when GoReleaser v2.19.0 ships. If it hasn't shipped by the first release candidate, re-decide option 3 (the checklist).
 - **Notarization is not needed for this.** It would be needed only if Homebrew dropped the `run` route. It would also change the publish phase: a signature with a fresh timestamp makes darwin archives differ on every rebuild, so the byte-identical comparison would need redesigning first.
 
 ## Checking it locally

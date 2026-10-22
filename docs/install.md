@@ -125,7 +125,7 @@ If you'd rather trust everything in the tap, run `brew trust --tap rajasatyajit/
 env -u HOMEBREW_DEVELOPER brew install --cask rajasatyajit/tap/tokvera rajasatyajit/tap/sievant rajasatyajit/tap/halotrcer
 ```
 
-Or use [`install.sh`](#installsh-linux-macos), which doesn't use Homebrew. Trusting the tap doesn't help. The casks will move to Homebrew's declarative steps, which have no such problem, once GoReleaser can write them.
+Or use [`install.sh`](#installsh-linux-macos), which doesn't use Homebrew. Trusting the tap doesn't help. `brew upgrade` and `brew uninstall` of these casks fail the same way while the variable is set, so run them with `env -u HOMEBREW_DEVELOPER` too. The casks will move to Homebrew's declarative steps, which have no such problem, once GoReleaser can write them.
 
 **The macOS binaries are not notarized by Apple.** Homebrew checks each archive's SHA-256 against its cask. Each cask then removes macOS's quarantine flag from the one binary it installed, so Gatekeeper does not refuse it as "damaged". Apple has not vouched for the binary; the guarantee is the checksum and the cosign signature. The cask's caveats show how to check Halotrcer's signature yourself:
 

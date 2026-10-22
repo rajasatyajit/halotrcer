@@ -21,7 +21,11 @@ Halotrcer bundles two other releases, so it can only be released after both of t
   - **macos-15-intel, Homebrew 6.0.18: PASS (6 checks).** That version has no flight-block deprecation.
   - Why: `odeprecated` raises instead of warning when the `HOMEBREW_DEVELOPER` environment variable is set (`disable_for_developers`, `Library/Homebrew/utils/output.rb:256` at 7.0.10). The developer mode that `brew tap-new` switches on in the smoke's stand-in tap is not that variable, which is why the earlier runs only warned.
   - Who it affects: anyone with `HOMEBREW_DEVELOPER` set, on Homebrew 7, for every cask of all three projects, since Tokvera's and Sievant's `.goreleaser.yaml` write the same `postflight` as ours. Trusting the tap doesn't help: the casks were trusted in this run and still failed to load.
-  - Not tested: whether `brew upgrade` and `brew uninstall` of an already-installed cask fail the same way. They load the cask too, so they probably do.
+  - **Upgrade and uninstall fail the same way** (run [39723588510](https://github.com/rajasatyajit/halotrcer/actions/runs/39723588510), 2026-10-22, at `2546234`). The three casks were installed without the variable (brew warned three times and installed them), then run with `HOMEBREW_DEVELOPER=1` on macos-latest, Homebrew 7.0.9:
+    - `brew upgrade --cask rajasatyajit/tap/halotrcer`, to a raised version, failed with the same error, naming `halotrcer.rb:40`, before downloading anything;
+    - `brew uninstall --cask` of all three failed with the same error, and all three stayed installed.
+
+    So a user who sets `HOMEBREW_DEVELOPER` after installing can neither upgrade nor remove the casks without unsetting it. The macos-15-intel cell (Homebrew 6.0.18, which has no flight-block deprecation) is the control: there `brew uninstall` with the variable removed all three, and `brew upgrade` failed only on a bug in the check (the cask names its archive with `#{version}`, so the raised version pointed at a missing file), fixed in `23b6d27`.
   - No cask is changed. The options are in "Homebrew cask hooks" below.
 - [ ] **Before the first release candidate: is GoReleaser v2.19.0 out?** If it is, switch the casks to `install_steps` ("Homebrew cask hooks", below). If it isn't, re-decide option 3 there, the hand-written `postflight_steps` through `custom_block`, which GoReleaser 2.18.3 can emit.
 - [ ] **For a stable Halotrcer release:** both tools' winget manifests are merged into `microsoft/winget-pkgs`. winget-pkgs validation refuses a manifest whose dependencies are not in the catalog yet.

@@ -45,7 +45,7 @@ These rank first. A poor Tokvera latency grade is shown as a *reliability concer
 
 ## Homebrew says "Calling `postflight` is deprecated".
 
-That's a warning, and the install still works. It comes from the step in each cask that removes macOS's quarantine flag, which Homebrew 7 wants written in a newer form. The casks will switch once GoReleaser, which writes them, supports that form. If you have `HOMEBREW_DEVELOPER` set, Homebrew treats the warning as an error and installs nothing. Run the install with `env -u HOMEBREW_DEVELOPER` in front, or use `install.sh` ([install.md](install.md#homebrew-macos)).
+That's a warning, and the install still works. It comes from the step in each cask that removes macOS's quarantine flag, which Homebrew 7 wants written in a newer form. The casks will switch once GoReleaser, which writes them, supports that form. If you have `HOMEBREW_DEVELOPER` set, Homebrew treats the warning as an error and won't install, upgrade or uninstall these casks. Put `env -u HOMEBREW_DEVELOPER` in front of the brew command, or use `install.sh` ([install.md](install.md#homebrew-macos)).
 
 ## No endpoint to hand?
 

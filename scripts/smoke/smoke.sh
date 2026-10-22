@@ -289,7 +289,10 @@ brew)
 	if [ -n "$dev" ]; then
 		# A real upgrade: the halotrcer cask's version raised, with the same
 		# archive and sha256, so brew loads both the installed and the new cask.
-		sed -E 's/^( *version ")[^"]*"/\19999.0.0"/' "$casks/halotrcer.rb" >"$work/halotrcer.rb"
+		# The urls name the archive with #{version}, so pin that first.
+		v="$(sed -n -E 's/^ *version "([^"]*)"/\1/p' "$casks/halotrcer.rb")"
+		[ -n "$v" ] || fail "brew: no version in the halotrcer cask"
+		sed -E -e "s/#\{version\}/$v/g" -e 's/^( *version ")[^"]*"/\19999.0.0"/' "$casks/halotrcer.rb" >"$work/halotrcer.rb"
 		grep -q '^ *version "9999.0.0"' "$work/halotrcer.rb" || fail "brew: could not raise the halotrcer cask's version"
 		cp "$work/halotrcer.rb" "$casks/halotrcer.rb"
 		bad=""

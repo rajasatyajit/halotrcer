@@ -297,9 +297,15 @@ brew)
 		cp "$work/halotrcer.rb" "$casks/halotrcer.rb"
 		bad=""
 		if HOMEBREW_DEVELOPER=1 HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_FROM_API=1 \
-			brew upgrade --cask rajasatyajit/tap/halotrcer &&
-			brew list --cask --versions rajasatyajit/tap/halotrcer | grep -q ' 9999\.0\.0$'; then
-			pass "with HOMEBREW_DEVELOPER=1, brew upgrade upgraded the halotrcer cask"
+			brew upgrade --cask rajasatyajit/tap/halotrcer; then
+			got="$(brew list --cask --versions halotrcer 2>&1 || true)"
+			case "$got" in
+			*" 9999.0.0") pass "with HOMEBREW_DEVELOPER=1, brew upgrade upgraded the halotrcer cask" ;;
+			*)
+				say "brew upgrade exited 0, but brew list --cask --versions halotrcer says: $got"
+				bad="upgrade"
+				;;
+			esac
 		else
 			say "with HOMEBREW_DEVELOPER=1, brew upgrade did not upgrade the halotrcer cask"
 			bad="upgrade"

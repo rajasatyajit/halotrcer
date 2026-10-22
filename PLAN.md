@@ -203,7 +203,7 @@ Built (branch `m2-channels`):
 
   - Linux runs on `[ubuntu-latest, ubuntu-24.04-arm]`. macOS runs on macos-latest (with a Rosetta channel) and macos-15-intel.
   - Windows runs on `[windows-latest, windows-11-arm]` × `native/script/iex` under PowerShell 5.1 and 7, plus `scoop-ps7` and `winget-ps7` (a pinned winget when the runner's is older).
-  - `workflow_dispatch` inputs `include_macos` and `include_windows` (boolean, default false). Those jobs run only when theirs is true. Otherwise they record `SKIP: not requested (owner approves macOS/Windows runs per release candidate)` (owner, 2026-10-21; docs/development.md).
+  - `workflow_dispatch` inputs `include_macos` and `include_windows` (boolean, default false), and `homebrew_developer` (default false: the brew channel installs without `HOMEBREW_DEVELOPER`, then upgrades and uninstalls with it). Those jobs run only when theirs is true. Otherwise they record `SKIP: not requested (owner approves macOS/Windows runs per release candidate)` (owner, 2026-10-21; docs/development.md).
   - Every other Linux job (`snapshot`, and `integration.yml`) runs on `${{ github.event.repository.private && vars.LINUX_RUNNER || 'ubuntu-24.04' }}`, installs what it needs itself and first runs `scripts/ci/runner-tools.sh` on a self-hosted runner; the smoke matrix's `ubuntu-latest` and the arm64 runners stay as they are.
 - Every step uses `if: !cancelled()` and appends `RESULT <channel> PASS|SKIP <reason>|FAIL <reason>`. `check-results.sh` alone decides the job.
 - Per channel:
@@ -287,7 +287,7 @@ The top 5 make up the executive summary. Every entry carries its source tool, it
 3. The two toolchains diverge, Tokvera on 1.27 and Sievant on 1.26. That doesn't matter at run time, since the tools are separate binaries, but govulncheck must run under Halotrcer's own pinned toolchain, never this machine's `go1.27.1-X:nodwarf5`. `make toolchain-check` refuses it.
 4. Homebrew deprecates Ruby cask flight blocks, the `postflight` that removes quarantine in all three repos' casks. Third-party taps get warnings until 2027-12-11 ([brew.sh 7.0.0 post](https://github.com/Homebrew/brew.sh/blob/main/_posts/2026-09-13-homebrew-7.0.0.md), lines 33 and 225). Two follow-ups (docs/releasing.md, "Homebrew cask hooks"):
    - When GoReleaser v2.19.0 is released, each repo's session switches its casks to the declarative `run` step and bumps its pinned GoReleaser.
-   - Before the first release candidate, run the brew smoke once with `HOMEBREW_DEVELOPER=1` and record whether the warning becomes an error.
+   - The brew smoke under `HOMEBREW_DEVELOPER=1` (run 39720029167, 2026-10-22): on Homebrew 7.0.9 the warning becomes an error and no cask installs. Options and a recommendation are in docs/releasing.md; no cask is changed yet.
 5. This machine is shared with other sessions. Snapshot builds, Docker, kind, `smoke-local` and building the tools for fixtures (D1) all wait for your go-ahead.
 
 ## 6. Acceptance (reported as a table at each milestone's end)

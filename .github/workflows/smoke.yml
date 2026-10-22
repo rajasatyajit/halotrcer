@@ -35,6 +35,10 @@ on:
         description: Run the Windows jobs (approved per release candidate)
         type: boolean
         default: false
+      homebrew_developer:
+        description: macOS brew channel only - install without HOMEBREW_DEVELOPER, then upgrade and uninstall with HOMEBREW_DEVELOPER=1
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -211,6 +215,8 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE: "1"
           HOMEBREW_NO_INSTALL_FROM_API: "1"
           HOMEBREW_NO_ANALYTICS: "1"
+          # smoke.sh sets HOMEBREW_DEVELOPER=1 from this in the brew channel only.
+          SMOKE_HOMEBREW_DEVELOPER: ${{ inputs.homebrew_developer && '1' || '' }}
           SMOKE_RESULTS: ${{ runner.temp }}/smoke-results
         run: |
           set -euo pipefail

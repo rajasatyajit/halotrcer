@@ -16,7 +16,18 @@ Halotrcer bundles two other releases, so it can only be released after both of t
 
 - [ ] **Tokvera and Sievant are released.** Each has a published release in the compatibility matrix (`internal/compat/matrix.json`, currently `>=0.2.0 <0.3.0`), with its image and chart pushed.
 - [ ] **Tokvera's embedded price list is fresh.** Its `as_of` is 2026-10-11 (`pkg/scan/rates.yaml` in Tokvera), and Tokvera calls it stale more than 60 days later (`EmbeddedPricingStaleDays`, `pkg/scan/pricinginfo.go`). 2026-12-10 is the last clean day: from 2026-12-11, every scan, and so every Halotrcer report, carries the stale-prices warning. Have Tokvera refresh the sheet right before any Tokvera release that Halotrcer will pin.
-- [ ] **Before the first release candidate: the brew smoke under `HOMEBREW_DEVELOPER=1`.** Dispatch `smoke.yml` with `include_macos` once, with `HOMEBREW_DEVELOPER=1` set for the brew channel, and record here whether the `postflight` deprecation warning becomes an error. Homebrew's `odeprecated` raises instead of warning when `HOMEBREW_DEVELOPER` is set (`disable_for_developers`, `Library/Homebrew/utils/output.rb:256` at 7.0.10), but the smoke runs so far had developer mode switched on by `brew tap-new` and still only warned. Result: _not yet run_.
+- [x] **The brew smoke under `HOMEBREW_DEVELOPER=1`: run, and the warning becomes an error.** Run [39720029167](https://github.com/rajasatyajit/halotrcer/actions/runs/39720029167) (2026-10-22, `smoke.yml` on `smoke-homebrew-developer` at `706344e`, `include_macos` and `homebrew_developer`, stand-in tools):
+  - **macos-latest (Apple Silicon), Homebrew 7.0.9: FAIL.** brew trusted the three named casks, then reported "Calling `postflight` is deprecated! Use `postflight_steps` instead." as an error, naming `tokvera.rb:36` in the stand-in tap, and exited 1. Nothing was installed. Without the variable, the same runner and Homebrew version installed all three and only warned (run [39651710001](https://github.com/rajasatyajit/halotrcer/actions/runs/39651710001)).
+  - **macos-15-intel, Homebrew 6.0.18: PASS (6 checks).** That version has no flight-block deprecation.
+  - Why: `odeprecated` raises instead of warning when the `HOMEBREW_DEVELOPER` environment variable is set (`disable_for_developers`, `Library/Homebrew/utils/output.rb:256` at 7.0.10). The developer mode that `brew tap-new` switches on in the smoke's stand-in tap is not that variable, which is why the earlier runs only warned.
+  - Who it affects: anyone with `HOMEBREW_DEVELOPER` set, on Homebrew 7, for every cask of all three projects, since Tokvera's and Sievant's `.goreleaser.yaml` write the same `postflight` as ours. Trusting the tap doesn't help: the casks were trusted in this run and still failed to load.
+  - **Upgrade and uninstall fail the same way** (run [39723588510](https://github.com/rajasatyajit/halotrcer/actions/runs/39723588510), 2026-10-22, at `2546234`). The three casks were installed without the variable (brew warned three times and installed them), then run with `HOMEBREW_DEVELOPER=1` on macos-latest, Homebrew 7.0.9:
+    - `brew upgrade --cask rajasatyajit/tap/halotrcer`, to a raised version, failed with the same error, naming `halotrcer.rb:40`, before downloading anything;
+    - `brew uninstall --cask` of all three failed with the same error, and all three stayed installed.
+
+    Run [39725223934](https://github.com/rajasatyajit/halotrcer/actions/runs/39725223934) (at `bdf5a54`) reproduced both failures on the same runner. So a user who sets `HOMEBREW_DEVELOPER` after installing can neither upgrade nor remove the casks without unsetting it. The macos-15-intel cell (Homebrew 6.0.18, which has no flight-block deprecation) is the control. In run [39725223934](https://github.com/rajasatyajit/halotrcer/actions/runs/39725223934) (at `bdf5a54`), `brew upgrade` with the variable upgraded halotrcer ("halotrcer was successfully upgraded!", `0.0.1-snapshot-bdf5a54 -> 9999.0.0`), and `brew uninstall` with it removed all three. The cell still reported FAIL because the check after the upgrade misread it: `brew list --cask --versions rajasatyajit/tap/halotrcer` didn't end in ` 9999.0.0`, and the log doesn't show what it printed. The check now asks for the plain token `halotrcer`, and prints what it got on a mismatch. Two earlier bugs in the check are fixed: the raised version pointed at a missing archive (`#{version}` in the urls, fixed in `23b6d27`), and this one, fixed after `bdf5a54`.
+  - No cask is changed. The options are in "Homebrew cask hooks" below.
+- [ ] **Before the first release candidate: is GoReleaser v2.19.0 out?** If it is, switch the casks to `install_steps` ("Homebrew cask hooks", below). If it isn't, re-decide option 3 there, the hand-written `postflight_steps` through `custom_block`, which GoReleaser 2.18.3 can emit.
 - [ ] **For a stable Halotrcer release:** both tools' winget manifests are merged into `microsoft/winget-pkgs`. winget-pkgs validation refuses a manifest whose dependencies are not in the catalog yet.
 - [ ] **The repository is public** (it is, since 2026-10-21). The preflight refuses a private one: attestations need it, and every channel downloads release assets without credentials. Tokvera's and Sievant's repositories must be public too: `halotrcer install` and every package manager download their releases without credentials.
 - [ ] **Private vulnerability reporting is on** (Settings → Code security → Private vulnerability reporting). SECURITY.md offers it as a reporting channel.
@@ -126,6 +137,24 @@ Every cask removes macOS's quarantine flag from its binary in a Ruby `postflight
   - replace `hooks.post.install` with `hooks.post.install_steps`, an `on_macos` `run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/<binary>"], must_succeed: false`;
   - check every key against `goreleaser jsonschema` at the new pin;
   - confirm the smoke brew channel still finds no quarantine flag on any binary, and the warning is gone.
+- **Until then, `HOMEBREW_DEVELOPER` users can't install the casks** (the checklist result above). The options, none applied yet:
+  1. **Document the workaround (no cask change).** In docs/install.md and docs/faq.md, say that with `HOMEBREW_DEVELOPER` set, brew refuses these casks; install with `env -u HOMEBREW_DEVELOPER brew install --cask ...` (without the variable, run 39651710001 installed all three on the same Homebrew), or with `install.sh`, which doesn't use Homebrew. The tap trust route is not a workaround: in the run, brew printed "Trusted cask" for all three and still failed.
+  2. **Switch to `install_steps` when GoReleaser v2.19.0 ships** (the item above). That fixes it for everyone, in all three repositories.
+  3. **Switch sooner with a hand-written step.** GoReleaser 2.18.3 can emit it. `goreleaser jsonschema` at 2.18.3 gives `HomebrewCaskHook` only `install` and `uninstall` (`additionalProperties: false`), so no step keys, but `HomebrewCask` has `custom_block`, a plain string. The cask template writes it, one line at a time, at the top of the `cask do` block (`internal/pipe/cask/templates/cask.rb:4-9` at v2.18.3). Then `cask.go` runs the whole rendered cask through GoReleaser's templating once more (line 380). So Homebrew's `{{staged_path}}` token must be written as the Go template string `{{ "{{staged_path}}" }}`; a bare `{{staged_path}}` fails the build with `function "staged_path" not defined` (checked with `text/template`, which GoReleaser's `tmpl` uses). The change in each repository's `.goreleaser.yaml` would be to drop `hooks.post.install` and add:
+
+     ```yaml
+     custom_block: |
+       postflight_steps do
+         on_macos do
+           run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ "{{staged_path}}" }}/<binary>"], must_succeed: false
+         end
+       end
+     ```
+
+     Homebrew documents `postflight_steps`, `run`, `on_macos` and `{{staged_path}}` at both runner versions (`docs/Cask-Cookbook.md`, "Stanza: `*flight_steps`", at 6.0.18 and 7.0.10), and both define the stanza (`INSTALL_STEP_ARTIFACT_CLASSES`, `Library/Homebrew/cask/dsl.rb`). Not yet tested: no cask has been built this way, and a Homebrew too old to know the stanza would refuse the cask. Option 2 replaces it later.
+  4. **Do nothing.** `HOMEBREW_DEVELOPER` is a setting for people who work on Homebrew itself; everyone else only sees the warning until 2027-12-11.
+
+  Decided (owner, 2026-10-22): option 1 now, option 2 when GoReleaser v2.19.0 ships. If it hasn't shipped by the first release candidate, re-decide option 3 (the checklist).
 - **Notarization is not needed for this.** It would be needed only if Homebrew dropped the `run` route. It would also change the publish phase: a signature with a fresh timestamp makes darwin archives differ on every rebuild, so the byte-identical comparison would need redesigning first.
 
 ## Checking it locally
